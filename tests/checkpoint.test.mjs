@@ -48,6 +48,18 @@ test('candidate preparation is create-only and does not invoke GitHub',async()=>
  const again=spawnSync(process.execPath,args,{cwd:process.cwd(),env,encoding:'utf8'});assert.notEqual(again.status,0);assert.deepEqual(await readFile(output),checkpointBytes(value,identity));
 }));
 
+test('CLI drives read-only verifier executables and fails closed on a signature failure',async()=>fixture(async({dir,path,bytes,sha})=>{
+ const {chmod}=await import('node:fs/promises');
+ const gh=join(dir,'gh'),git=join(dir,'git');
+ const mockGh=`#!/usr/bin/env node\nconst a=process.argv.slice(2);if(a[0]==='api')console.log(JSON.stringify({immutable:true,draft:false,tag_name:process.env.TEST_TAG,assets:[{name:'documentation-checkpoint.json',size:Number(process.env.TEST_SIZE),digest:'sha256:'+process.env.TEST_SHA}]}));else if(a[0]==='release'&&(a[1]==='verify'||a[1]==='verify-asset')){if(process.env.TEST_REJECT==='1')process.exit(1);}else process.exit(2);\n`;
+ const mockGit=`#!/usr/bin/env node\nconst a=process.argv.slice(2);if(a[0]==='remote')console.log('https://github.com/'+process.env.TEST_REPO+'.git');else if(a[0]==='rev-parse')console.log(a[1].endsWith('^{commit}')?process.env.TEST_COMMIT:process.env.TEST_OBJECT);else if(a[0]==='ls-remote')console.log(process.env.TEST_OBJECT+'\\trefs/tags/'+process.env.TEST_TAG);else if(a[0]==='rev-list')console.log(process.env.TEST_COMMIT);else process.exit(2);\n`;
+ await writeFile(gh,mockGh);await writeFile(git,mockGit);await chmod(gh,0o700);await chmod(git,0o700);
+ const env={...process.env,PATH:`${dir}:${process.env.PATH}`,GITHUB_REPOSITORY:repo,RELEASE_TAG:tag,TEST_TAG:tag,TEST_SIZE:String(bytes.length),TEST_SHA:sha,TEST_REPO:repo,TEST_COMMIT:commit,TEST_OBJECT:object};
+ const args=['scripts/docs-versions/checkpoint-cli.mjs','verify',path,sha,commit];
+ const good=spawnSync(process.execPath,args,{cwd:process.cwd(),env,encoding:'utf8'});assert.equal(good.status,0,good.stderr);assert.equal(JSON.parse(good.stdout).verified,true);
+ const bad=spawnSync(process.execPath,args,{cwd:process.cwd(),env:{...env,TEST_REJECT:'1'},encoding:'utf8'});assert.notEqual(bad.status,0);assert.match(bad.stderr,/checkpoint verification failed/);
+}));
+
 test('two signed checkpoints retain their pinned lineage and reject a substituted parent',async()=>{
  const dir=await mkdtemp(join(tmpdir(),'nightjar-gh-chain-'));try{
   const oldDir=join(dir,'old'),newDir=join(dir,'new');await mkdirBoth();async function mkdirBoth(){const {mkdir}=await import('node:fs/promises');await mkdir(oldDir);await mkdir(newDir);}
