@@ -1,0 +1,10 @@
+name: Documentation archive integration required
+on:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  not-configured:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo 'Integrate and verify the versioned documentation archive before release' >&2; exit 1

@@ -11,8 +11,11 @@ jobs:
   verify:
     if: ${{ false }}
     uses: ./.github/workflows/verify.yml
+  docs:
+    if: ${{ false }}
+    uses: ./.github/workflows/docs-archive.yml
   release:
-    needs: verify
+    needs: [verify, docs]
     # Separate authorization and review of controls are required to enable.
     if: ${{ false }}
     runs-on: ubuntu-latest
@@ -43,14 +46,29 @@ jobs:
           umask 077
           mkdir "$RUNNER_TEMP/astro-src" "$RUNNER_TEMP/astro-out"
           git archive HEAD | tar -x -C "$RUNNER_TEMP/astro-src"
+          node -e 'const fs=require("fs"),p=process.argv[1],v=JSON.parse(fs.readFileSync(p));if(v.private!==true)process.exit(1);v.private=false;fs.writeFileSync(p,JSON.stringify(v,null,2)+"\n")' "$RUNNER_TEMP/astro-src/package.json"
           (cd "$RUNNER_TEMP/astro-src" && npm pack --ignore-scripts --pack-destination "$RUNNER_TEMP/astro-out")
           node scripts/tag-release-cli.mjs inspect "$RUNNER_TEMP/astro-out/martlet-astro-${{ steps.identity.outputs.version }}.tgz"
+      - name: Build the exact-core versioned documentation snapshot
+        run: node scripts/docs-versions/build-release.mjs
+      - name: Require independently verified immutable archive publication
+        run: node scripts/docs-versions/verify-published.mjs
       - name: Recheck tag and version immediately before publication
         run: node scripts/tag-release-cli.mjs preflight
       - name: Publish the inspected archive with npm provenance
         run: npm publish "$RUNNER_TEMP/astro-out/martlet-astro-${{ steps.identity.outputs.version }}.tgz" --access public --tag "${{ steps.identity.outputs.channel }}" --provenance
       - name: Independently verify registry identity, integrity and bytes
         run: node scripts/tag-release-cli.mjs verify-registry "$RUNNER_TEMP/astro-out/martlet-astro-${{ steps.identity.outputs.version }}.tgz"
+      - name: Verify npm signatures and exact release provenance
+        env:
+          PACKAGE_NAME: ${{ steps.identity.outputs.name }}
+          PACKAGE_VERSION: ${{ steps.identity.outputs.version }}
+        run: |
+          set -euo pipefail
+          mkdir "$RUNNER_TEMP/provenance-consumer"
+          printf '{"name":"release-verification","version":"0.0.0","private":true}\n' > "$RUNNER_TEMP/provenance-consumer/package.json"
+          (cd "$RUNNER_TEMP/provenance-consumer" && npm install --ignore-scripts --legacy-peer-deps --no-audit --no-fund --save-exact "$PACKAGE_NAME@$PACKAGE_VERSION" && npm audit signatures --json --include-attestations > "$RUNNER_TEMP/provenance-audit.json")
+          node scripts/tag-release-cli.mjs verify-provenance "$RUNNER_TEMP/provenance-audit.json" "$RUNNER_TEMP/astro-out/martlet-astro-${{ steps.identity.outputs.version }}.tgz"
       - name: Recheck tag before release creation
         run: node scripts/tag-release-cli.mjs verify-tag
       - name: Create GitHub Release after registry verification

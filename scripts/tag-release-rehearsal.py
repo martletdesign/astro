@@ -1,6 +1,8 @@
-import os, pathlib, subprocess, tempfile, json, shutil, sys
+import os, pathlib, subprocess, tempfile, json, shutil, sys, re
 src=pathlib.Path(__file__).resolve().parent.parent
 family=json.loads((src/'package.json').read_text())['name'].split('/')[0][1:]
+source_package=json.loads((src/'package.json').read_text())
+if source_package.get('private') is not True or f'@{family}/core' not in source_package.get('peerDependencies',{}): raise SystemExit('Rehearsal requires the combined private core-migration candidate')
 base=pathlib.Path(tempfile.mkdtemp(prefix='nightjar-release-rehearsal-'))
 repo=base/'repo';repo.mkdir()
 def run(args,cwd=repo,env=None,quiet=True):
@@ -14,7 +16,7 @@ for f in ['package.json','package-lock.json']:
  p=repo/f;d=json.loads(p.read_text());d['version']=version
  if f=='package-lock.json': d['packages']['']['version']=version
  p.write_text(json.dumps(d,indent=2)+'\n')
-p=repo/'CHANGELOG.md';p.write_text(p.read_text().replace('## 1.2.2',f'## {version}',1))
+p=repo/'CHANGELOG.md';text,count=re.subn(r'^## [0-9]+\.[0-9]+\.[0-9]+',f'## {version}',p.read_text(),count=1,flags=re.MULTILINE);assert count==1;p.write_text(text)
 env=os.environ.copy();env.setdefault('NODE_USE_ENV_PROXY','1')
 run(['npm','ci','--ignore-scripts','--legacy-peer-deps'],env=env)
 run(['npm','run','build','--if-present'],env=env)
@@ -24,6 +26,7 @@ identity=('martletdesign/astro' if family=='martlet' else 'krigsvolddesign/astro
 env.update({'RELEASE_TAG':tag,'GITHUB_REPOSITORY':identity,'GITHUB_SHA':sha,'REF_PROTECTED':'true','RELEASE_ENVIRONMENT_READY':'yes','GITHUB_OUTPUT':str(base/'outputs')})
 run(['node','scripts/tag-release-cli.mjs','preflight'],env=env)
 export=base/'export';export.mkdir();archive=subprocess.run(['git','archive','HEAD'],cwd=repo,stdout=subprocess.PIPE,check=True);subprocess.run(['tar','-x','-C',str(export)],input=archive.stdout,check=True)
+p=export/'package.json';d=json.loads(p.read_text());assert d['private'] is True;d['private']=False;p.write_text(json.dumps(d,indent=2)+'\n')
 out=base/'out';out.mkdir();result=json.loads(run(['npm','pack','--ignore-scripts','--pack-destination',str(out),'--json'],cwd=export,env=env));artifact=out/result[0]['filename']
 run(['node','scripts/tag-release-cli.mjs','inspect',str(artifact)],env=env)
 run(['npm','publish',str(artifact),'--dry-run','--ignore-scripts','--tag','next','--registry=http://127.0.0.1:9','--fetch-retries=0','--fetch-timeout=2000'],env=env)

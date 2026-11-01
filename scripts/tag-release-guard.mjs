@@ -11,8 +11,10 @@ export function releaseVersion(tag) {
 
 export function validateIdentity({tag,pkg,source,lock,repository,expectedRepository,expectedName}) {
   const result=releaseVersion(tag);
-  if(repository!==expectedRepository || pkg.name!==expectedName || pkg.private===true || pkg.version!==result.version || source.version!==result.version) throw Error('Release identity mismatch');
+  if(repository!==expectedRepository || pkg.name!==expectedName || pkg.private!==true || pkg.version!==result.version || source.version!==result.version) throw Error('Release identity mismatch');
   if(pkg.repository?.url!==`git+https://github.com/${expectedRepository}.git`) throw Error('Repository metadata mismatch');
+  const scope=expectedName.split('/')[0];
+  if(!pkg.peerDependencies?.[`${scope}/core`] || pkg.peerDependencies?.[`${scope}/theme`]) throw Error('Release requires the core-migration peer contract');
   if(lock.name!==pkg.name || lock.version!==pkg.version || lock.packages?.['']?.name!==pkg.name || lock.packages?.['']?.version!==pkg.version || !['dependencies','devDependencies','peerDependencies','optionalDependencies'].every(key=>isDeepStrictEqual(lock.packages?.['']?.[key]??{},pkg[key]??{}))) throw Error('Lockfile metadata mismatch');
   return result;
 }
@@ -47,6 +49,27 @@ export function verifyArchive({local,remote,metadata,name,version}) {
   if(typeof integrity!=='string' || !/^sha512-[A-Za-z0-9+/]{86}==$/.test(integrity)) return false;
   const a=digest(local),b=digest(remote),c=Buffer.from(integrity.slice(7),'base64');
   return c.length===a.length && timingSafeEqual(a,b) && timingSafeEqual(a,c);
+}
+
+// The caller must supply output from a successful `npm audit signatures
+// --json --include-attestations`; npm cryptographically verifies these bundles.
+export function verifyProvenance({audit,archive,name,version,repository,tag,commit,expectedWorkflow='.github/workflows/tag-release.yml',expectedRef=`refs/tags/${tag}`,expectedEvent='push'}) {
+  if(!Array.isArray(audit?.invalid)||audit.invalid.length||!Array.isArray(audit?.missing)||audit.missing.length) return false;
+  const entry=audit?.verified?.find(x=>x.name===name&&x.version===version);
+  const bundle=entry?.attestationBundles?.find(x=>x.predicateType==='https://slsa.dev/provenance/v1')?.bundle;
+  if(!bundle?.dsseEnvelope?.payload || !Buffer.isBuffer(archive)) return false;
+  try {
+    const statement=JSON.parse(Buffer.from(bundle.dsseEnvelope.payload,'base64').toString('utf8'));
+    const [scope,pkg]=name.split('/');
+    const subject=`pkg:npm/${encodeURIComponent(scope)}/${pkg}@${version}`;
+    const digest=createHash('sha512').update(archive).digest('hex');
+    const definition=statement.predicate?.buildDefinition;
+    const workflow=definition?.externalParameters?.workflow;
+    const dependencies=definition?.resolvedDependencies??[];
+    return statement._type==='https://in-toto.io/Statement/v1' && statement.subject?.some(x=>x.name===subject&&x.digest?.sha512===digest) &&
+      workflow?.repository===`https://github.com/${repository}` && workflow.path===expectedWorkflow && workflow.ref===expectedRef &&
+      definition?.internalParameters?.github?.event_name===expectedEvent && dependencies.some(x=>x.uri===`git+https://github.com/${repository}@${expectedRef}`&&x.digest?.gitCommit===commit);
+  } catch {return false;}
 }
 
 export async function identityFromFiles({tag,repository,expectedRepository,expectedName}) {
