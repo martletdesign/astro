@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "family": "martlet",
+  "core": {
+    "name": "@martlet/core",
+    "version": "2.2.3",
+    "integrity": "sha512-Yan9LJSOTAP+BDeqXMZfZ+uq9oVOb7xGczHEM7fxKTAwI3SQgoLu06te5R1qLu/IB/KHNL2WuAfRLvXU/XsXwQ=="
+  },
+  "astro": "7.3.2"
+}
