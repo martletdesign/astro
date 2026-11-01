@@ -72,7 +72,11 @@ export function verifyProvenance({audit,archive,name,version,repository,tag,comm
     const definition=statement.predicate?.buildDefinition;
     const workflow=definition?.externalParameters?.workflow;
     const dependencies=definition?.resolvedDependencies??[];
-    return statement._type==='https://in-toto.io/Statement/v1' && statement.subject?.some(x=>x.name===subject&&x.digest?.sha512===digest) &&
+    return statement._type==='https://in-toto.io/Statement/v1' &&
+      statement.predicateType==='https://slsa.dev/provenance/v1' &&
+      definition?.buildType==='https://slsa-framework.github.io/github-actions-buildtypes/workflow/v1' &&
+      statement.predicate?.runDetails?.builder?.id==='https://github.com/actions/runner/github-hosted' &&
+      statement.subject?.some(x=>x.name===subject&&x.digest?.sha512===digest) &&
       workflow?.repository===`https://github.com/${repository}` && workflow.path===expectedWorkflow && workflow.ref===expectedRef &&
       definition?.internalParameters?.github?.event_name===expectedEvent && dependencies.some(x=>x.uri===`git+https://github.com/${repository}@${expectedRef}`&&x.digest?.gitCommit===commit);
   } catch {return false;}

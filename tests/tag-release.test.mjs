@@ -59,7 +59,7 @@ test('recovery refuses malformed tags before contacting the registry',()=>{
 test('verified provenance must identify the exact package, tag, workflow and commit',()=>{
   const archive=Buffer.from('release bytes'),commit='a'.repeat(40),tag='v2.2.3',repository=input.expectedRepository;
   const [scope,packageName]=pkg.name.split('/');
-  const statement={_type:'https://in-toto.io/Statement/v1',subject:[{name:`pkg:npm/${encodeURIComponent(scope)}/${packageName}@2.2.3`,digest:{sha512:createHash('sha512').update(archive).digest('hex')}}],predicate:{buildDefinition:{externalParameters:{workflow:{repository:`https://github.com/${repository}`,path:'.github/workflows/tag-release.yml',ref:`refs/tags/${tag}`}},internalParameters:{github:{event_name:'push'}},resolvedDependencies:[{uri:`git+https://github.com/${repository}@refs/tags/${tag}`,digest:{gitCommit:commit}}]}}};
+  const statement={_type:'https://in-toto.io/Statement/v1',predicateType:'https://slsa.dev/provenance/v1',subject:[{name:`pkg:npm/${encodeURIComponent(scope)}/${packageName}@2.2.3`,digest:{sha512:createHash('sha512').update(archive).digest('hex')}}],predicate:{runDetails:{builder:{id:'https://github.com/actions/runner/github-hosted'}},buildDefinition:{buildType:'https://slsa-framework.github.io/github-actions-buildtypes/workflow/v1',externalParameters:{workflow:{repository:`https://github.com/${repository}`,path:'.github/workflows/tag-release.yml',ref:`refs/tags/${tag}`}},internalParameters:{github:{event_name:'push'}},resolvedDependencies:[{uri:`git+https://github.com/${repository}@refs/tags/${tag}`,digest:{gitCommit:commit}}]}}};
   const makeAudit=s=>({invalid:[],missing:[],verified:[{name:pkg.name,version:'2.2.3',attestationBundles:[{predicateType:'https://slsa.dev/provenance/v1',bundle:{dsseEnvelope:{payload:Buffer.from(JSON.stringify(s)).toString('base64')}}}]}]});
   const args={audit:makeAudit(statement),archive,name:pkg.name,version:'2.2.3',repository,tag,commit};
   assert.equal(verifyProvenance(args),true);
@@ -67,6 +67,12 @@ test('verified provenance must identify the exact package, tag, workflow and com
   assert.equal(verifyProvenance({...args,archive:Buffer.from('other')}),false);
   assert.equal(verifyProvenance({...args,audit:{...args.audit,invalid:[{}]}}),false);
   assert.equal(verifyProvenance({...args,audit:{invalid:[],missing:[],verified:[]}}),false);
+  const altered=structuredClone(statement);altered.predicateType='https://example.invalid/provenance';
+  assert.equal(verifyProvenance({...args,audit:makeAudit(altered)}),false);
+  altered.predicateType=statement.predicateType;altered.predicate.runDetails.builder.id='https://example.invalid/builder';
+  assert.equal(verifyProvenance({...args,audit:makeAudit(altered)}),false);
+  altered.predicate.runDetails.builder.id=statement.predicate.runDetails.builder.id;altered.predicate.buildDefinition.buildType='https://example.invalid/build';
+  assert.equal(verifyProvenance({...args,audit:makeAudit(altered)}),false);
   statement.predicate.buildDefinition.externalParameters.workflow.path='.github/workflows/other.yml';
   assert.equal(verifyProvenance({...args,audit:makeAudit(statement)}),false);
 });
