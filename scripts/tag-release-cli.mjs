@@ -1,15 +1,15 @@
 import assert from 'node:assert/strict';
 import {appendFile,readFile} from 'node:fs/promises';
 import {execFileSync} from 'node:child_process';
-import {identityFromFiles,productionCommit,realGit,registryState,verifyArchive} from './tag-release-guard.mjs';
+import {identityFromFiles,productionCommit,realGit,registryState,verifyArchive,releaseVersion} from './tag-release-guard.mjs';
 
 const repository='martletdesign/astro',name='@martlet/astro',registry='https://registry.npmjs.org/';
 const tag=process.env.RELEASE_TAG;
-const version=tag?.slice(1);
+const command=process.argv[2];
+const version=command==='inspect'?undefined:releaseVersion(tag).version;
 const fetchTimed=url=>fetch(url,{signal:AbortSignal.timeout(15000),redirect:'error'});
 const packageURL=new URL(encodeURIComponent(name),registry).href;
 const versionURL=`${packageURL}/${encodeURIComponent(version??'')}`;
-const command=process.argv[2];
 
 if(command==='preflight') {
   if(process.env.RELEASE_ENVIRONMENT_READY!=='yes') throw Error('Protected release environment sentinel missing');

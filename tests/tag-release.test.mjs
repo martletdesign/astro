@@ -2,6 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {readFile} from 'node:fs/promises';
+import {spawnSync} from 'node:child_process';
 import {releaseVersion,validateIdentity,productionCommit,registryState,verifyArchive} from '../scripts/tag-release-guard.mjs';
 
 const pkg={name:'@martlet/astro',version:'2.2.3',private:false,repository:{url:'git+https://github.com/martletdesign/astro.git'},dependencies:{font:'1.0.0'}};
@@ -45,4 +46,9 @@ test('tag publication proposal is disabled and legacy release-event workflow is 
   assert.match(draft,/environment:\s*astro-production-release/);
   assert.match(draft,/npm publish[^\n]*--provenance/);
   assert.match(draft,/verify-registry/);
+});
+
+test('recovery refuses malformed tags before contacting the registry',()=>{
+  const run=spawnSync(process.execPath,['scripts/tag-release-cli.mjs','verify-registry','missing.tgz'],{env:{...process.env,RELEASE_TAG:'x2.2.3'},encoding:'utf8'});
+  assert.notEqual(run.status,0);assert.match(run.stderr,/Invalid release tag/);
 });
