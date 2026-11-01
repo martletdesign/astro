@@ -24,9 +24,12 @@ const launchOptions=engine==='chromium'&&process.env.PLAYWRIGHT_EXECUTABLE_PATH?
 const browser=await ({chromium,firefox,webkit})[engine].launch(launchOptions);
 try{
   for(const enabled of [false,true]){
-    const context=await browser.newContext({javaScriptEnabled:enabled}),page=await context.newPage();
+    const context=await browser.newContext({javaScriptEnabled:enabled}),page=await context.newPage(),assetFailures=[];
+    page.on('response',response=>{if(response.url().startsWith(origin)&&response.status()>=400)assetFailures.push(`${response.status()} ${response.url()}`);});
+    page.on('requestfailed',request=>{if(request.url().startsWith(origin))assetFailures.push(`failed ${request.url()}`);});
     try {
       const response=await page.goto(`${origin}${base}documentation/`);assert.equal(response.status(),200);
+      await page.evaluate(()=>document.fonts.ready);
       const nav=page.getByRole('navigation',{name:'Documentation versions'});assert.equal(await nav.count(),1);
       assert.equal(await nav.getByRole('link',{name:/current/}).getAttribute('aria-current'),'page');
       assert.match(await page.locator('meta[name="robots"]').getAttribute('content'),/noindex/);
@@ -38,6 +41,7 @@ try{
         const result=await new AxeBuilder({page}).analyze();assert.deepEqual(result.violations.map(x=>x.id),[]);
         await earlier.click();assert.equal(new URL(page.url()).pathname,`${prefix}/docs/v/1.0.0/`);
       }
+      assert.deepEqual(assetFailures,[], 'Archived local assets must resolve');
     } finally {await context.close();}
   }
 }finally{await browser.close();server.closeAllConnections();await new Promise(done=>server.close(done));}
