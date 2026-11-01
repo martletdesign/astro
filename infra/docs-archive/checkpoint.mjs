@@ -14,7 +14,8 @@ function validate(value,{family,repository,tag,expectedCommit}){
   validRepo(repository,family);validTag(tag);required(commit.test(expectedCommit||''),'Missing expected source commit');
   required(value?.schemaVersion===1&&value.family===family&&value.framework==='astro'&&value.version===tag.slice(1),'Checkpoint identity mismatch');
   required(value.source?.repository===repository&&value.source.tag===tag&&value.source.commit===expectedCommit,'Checkpoint source mismatch');
-  for(const key of ['manifestSha256','catalogSha256','promotionSha256'])required(digest.test(value[key]||''),`Invalid ${key}`);
+  for(const key of ['manifestSha256','catalogSha256'])required(digest.test(value[key]||''),`Invalid ${key}`);
+  required(digest.test(value.promotionSha256||'')||(parseVersion(value.version).channel==='prerelease'&&value.promotionSha256===null),'Invalid promotionSha256');
   if(value.previous!==null){required(value.previous&&digest.test(value.previous.sha256||'')&&value.previous.tag!==tag,'Invalid previous checkpoint');validTag(value.previous.tag);}
   return value;
 }
