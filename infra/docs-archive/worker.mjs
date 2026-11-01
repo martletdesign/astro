@@ -1,6 +1,7 @@
 // A deliberately narrow R2 gateway: only the Worker may possess bucket write
 // access. R2 conditional writes provide create-only object creation; the
 // public endpoint exposes only the immutable committed manifest's inventory.
+import {catalogRequest} from './catalog.mjs';
 const encoder = new TextEncoder();
 const versionRE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/;
 const digestRE = /^[a-f0-9]{64}$/;
@@ -46,7 +47,12 @@ function contentType(path) {
 export default { async fetch(request, env) {
   if (!['martlet','krigsvold'].includes(env.FAMILY) || !env.ARCHIVES) return fail(503,'archive configuration unavailable');
   const url = new URL(request.url); if (url.search || url.pathname.includes('%')) return fail(400,'invalid path');
-  const segments = url.pathname.split('/');
+  const prefixPath=env.DEPLOY_PREFIX||'';
+  if(prefixPath && (!/^\/(?:[A-Za-z0-9._~-]+)(?:\/[A-Za-z0-9._~-]+)*$/.test(prefixPath)||prefixPath.split('/').some(x=>x==='.'||x==='..')))return fail(503,'invalid deployment prefix');
+  if(prefixPath&&!url.pathname.startsWith(prefixPath+'/'))return fail(404,'not found');
+  const pathname=url.pathname.slice(prefixPath.length);
+  if(pathname==='/_archive/catalog'||pathname==='/docs/catalog.json'||pathname.startsWith('/docs/catalog-history/'))return catalogRequest(request,env,authorized,pathname);
+  const segments = pathname.split('/');
   const upload = segments[1] === '_archive' && segments[2] === 'v';
   const read = segments[1] === 'docs' && segments[2] === 'v';
   if ((!upload && !read) || !validVersion(segments[3] || '')) return fail(404,'not found');

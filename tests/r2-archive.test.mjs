@@ -7,8 +7,8 @@ crypto.subtle.timingSafeEqual = (a,b)=>timingSafeEqual(Buffer.from(a),Buffer.fro
 class MockR2 {
   data=new Map();
   async head(key){return this.data.has(key)?{}:null;}
-  async get(key){const b=this.data.get(key);return b?{body:true,arrayBuffer:async()=>Uint8Array.from(b).buffer}:null;}
-  async put(key,value,options){assert.equal(options.onlyIf.get('if-none-match'),'*');if(this.data.has(key))return null;this.data.set(key,Uint8Array.from(value));return {};}
+  async get(key){const b=this.data.get(key);return b?{body:true,etag:sha(b),arrayBuffer:async()=>Uint8Array.from(b).buffer}:null;}
+  async put(key,value,options){const none=options.onlyIf.get('if-none-match'),match=options.onlyIf.get('if-match');if(none==='*'&&this.data.has(key))return null;if(match&&(!this.data.has(key)||match!==`"${sha(this.data.get(key))}"`))return null;if(!none&&!match)throw Error('unconditional write');this.data.set(key,Uint8Array.from(value));return {};}
 }
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
 const token='this-is-a-secret-token-32-bytes-minimum';
@@ -42,9 +42,30 @@ test('rejects unsafe identities and upload paths',async()=>{
  assert.equal((await send(e,'/_archive/v/2.0.0/manifest.json',{method:'PUT',body:m,headers:{'x-manifest-sha256':sha(m)}})).status,400);
 });
 
+test('catalog history is append-only and competing pointer advances cannot both win',async()=>{
+ const e=env(),v='2.0.0',bytes=Buffer.from('one'),manifest=await upload(e,v,bytes),entry={version:v,channel:'stable',manifestSha256:sha(manifest),supported:true,topics:['index.html']};
+ const first={schemaVersion:1,family:'martlet',framework:'astro',previousSha256:null,latestStable:v,versions:[entry]};
+ const a=Buffer.from(JSON.stringify(first));assert.equal((await send(e,'/_archive/catalog',{method:'PUT',body:a,headers:{'x-previous-catalog-sha256':'none'}})).status,201);
+ const altered={...first,previousSha256:sha(a),versions:[{...entry,manifestSha256:'f'.repeat(64)}]};
+ assert.equal((await send(e,'/_archive/catalog',{method:'PUT',body:JSON.stringify(altered),headers:{'x-previous-catalog-sha256':sha(a)}})).status,409);
+ const successor={...first,previousSha256:sha(a)};
+ const advance=value=>send(e,'/_archive/catalog',{method:'PUT',body:JSON.stringify({...successor,description:value}),headers:{'x-previous-catalog-sha256':sha(a)}});
+ const results=await Promise.all([advance('one'),advance('two')]);assert.deepEqual(results.map(x=>x.status).sort(),[201,409]);
+ assert.equal((await send(e,`/docs/catalog-history/${sha(a)}.json`)).status,200);
+});
+
+test('subpath routes serve only the configured prefix',async()=>{
+ const e=env();e.DEPLOY_PREFIX='/preview';const b=Buffer.from('x'),m=Buffer.from(JSON.stringify(manifestFor('2.0.0',b)));
+ assert.equal((await send(e,'/_archive/v/2.0.0/index.html',{method:'PUT',body:b})).status,404);
+ assert.equal((await send(e,'/preview/_archive/v/2.0.0/index.html',{method:'PUT',body:b})).status,201);
+ assert.equal((await send(e,'/preview/_archive/v/2.0.0/manifest.json',{method:'PUT',body:m,headers:{'x-manifest-sha256':sha(m)}})).status,201);
+ assert.equal(await (await send(e,'/preview/docs/v/2.0.0/')).text(),'x');
+ assert.equal((await send(e,'/docs/v/2.0.0/')).status,404);
+});
+
 test('client resumes interrupted upload, verifies remote bytes, and rejects a substituted trust anchor',async()=>{
  const {mkdtemp,mkdir,writeFile,rm}=await import('node:fs/promises'),{tmpdir}=await import('node:os'),{join}=await import('node:path');
- const {createManifest,sha256}=await import('../scripts/docs-versions/contract.mjs'),{publishCandidate,verifyPublished}=await import('../infra/docs-archive/client.mjs');
+ const {createManifest,sha256}=await import('../scripts/docs-versions/contract.mjs'),{publishCandidate,verifyPublished,advanceCatalog,verifyCatalogHistory}=await import('../infra/docs-archive/client.mjs');
  const root=await mkdtemp(join(tmpdir(),'remote-archive-')),e=env(),version='2.0.0',dir=join(root,version),originalFetch=globalThis.fetch;
  try{
   await mkdir(dir);await writeFile(join(dir,'index.html'),'<meta name="robots" content="noindex"><h1>One</h1>');await writeFile(join(dir,'app.js'),'console.log(1)');
@@ -56,6 +77,15 @@ test('client resumes interrupted upload, verifies remote bytes, and rejects a su
   await assert.rejects(publishCandidate(options),/simulated interruption/);
   await publishCandidate(options);await publishCandidate(options);
   assert.equal((await verifyPublished(options)).files,2);
+  const entry={version,channel:'stable',manifestSha256:expectedSha256,supported:true,topics:['index.html']};
+  const genesis={schemaVersion:1,family:'martlet',framework:'astro',previousSha256:null,latestStable:version,versions:[entry]};
+  const first=await advanceCatalog({...options,catalog:genesis,expectedPreviousSha256:null});
+  assert.equal((await advanceCatalog({...options,catalog:genesis,expectedPreviousSha256:null})).recovered,true);
+  const next={...genesis,previousSha256:first.headSha256};
+  const second=await advanceCatalog({...options,catalog:next,expectedPreviousSha256:first.headSha256});
+  assert.equal((await verifyCatalogHistory({...options,anchorSha256:first.headSha256})).headSha256,second.headSha256);
+  await assert.rejects(verifyCatalogHistory({...options,anchorSha256:'a'.repeat(64)}),/trusted anchor/);
+  await assert.rejects(advanceCatalog({...options,catalog:genesis,expectedPreviousSha256:null}),/already exists/);
   await assert.rejects(verifyPublished({...options,expectedSha256:'f'.repeat(64)}),/digest mismatch/);
   e.ARCHIVES.data.set('martlet/astro/2.0.0/app.js',Buffer.from('tampered'));
   await assert.rejects(verifyPublished(options),/Missing archive file/);
