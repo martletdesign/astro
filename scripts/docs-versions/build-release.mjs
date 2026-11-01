@@ -42,10 +42,7 @@ try {
   process.env.NIGHTJAR_FAMILY=family;
   run('npm',['run','build'],site);
   const dist=join(site,'dist'),paths=await files(dist);
-  const catalog=JSON.parse(await readFile(join(site,'page-archetypes/content/catalog.json'),'utf8'));
-  if(catalog.pages?.length!==50||new Set(catalog.pages.map(p=>p.id)).size!==50)throw Error('Expected 50 unique canonical examples');
-  for(const page of catalog.pages){if(!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(page.id))throw Error('Invalid canonical example id');await readFile(join(dist,'examples',page.id,'index.html'));}
-  await readFile(join(dist,'examples/scientific-workspace/index.html'));
+  run('python3',[join(root,'scripts/docs-versions/verify-canonical.py'),dist,join(site,'page-archetypes/content/catalog.json')],root);
   run('python3',[join(root,'scripts/docs-versions/verify-html.py'),dist,'--baseurl',base.replace(/\/$/,'')],root);
   const navigationScript=`const prefix=${JSON.stringify(prefix)},family=${JSON.stringify(family)},active=${JSON.stringify(version)};\n`+
     `const nav=document.querySelector('[data-version-nav]');if(nav)fetch(prefix+'/docs/catalog.json',{credentials:'same-origin'}).then(r=>{if(!r.ok)throw Error();return r.json()}).then(c=>{if(c.family!==family||c.framework!=='astro'||!Array.isArray(c.versions)||c.versions.length>1000||!c.versions.some(v=>v.version===active))return;const topic=nav.dataset.topic,list=nav.querySelector('ul'),frag=document.createDocumentFragment();for(const v of c.versions){if(typeof v.version!=='string'||!/^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?$/.test(v.version)||!Array.isArray(v.topics)||typeof v.supported!=='boolean')return;const use=v.topics.includes(topic)?topic:'';if(use&&!/^[A-Za-z0-9._~/-]+$/.test(use))return;const li=document.createElement('li'),a=document.createElement('a');a.href=prefix+'/docs/v/'+v.version+'/'+use;a.textContent='v'+v.version+(v.version===active?' (current)':'')+(v.version===c.latestStable?' (latest stable)':'')+(v.supported?'':' (unsupported)')+(v.channel==='prerelease'?' (prerelease)':'');if(v.version===active)a.setAttribute('aria-current','page');li.append(a);frag.append(li);}list.replaceChildren(frag)}).catch(()=>{});\n`;
