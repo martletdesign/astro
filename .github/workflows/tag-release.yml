@@ -1,0 +1,67 @@
+name: Tag-driven Astro release (disabled proposal)
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+concurrency:
+  group: astro-tag-release-${{ github.repository }}
+  cancel-in-progress: false
+jobs:
+  verify:
+    if: ${{ false }}
+    uses: ./.github/workflows/verify.yml
+  release:
+    needs: verify
+    # Separate authorization and review of controls are required to enable.
+    if: ${{ false }}
+    runs-on: ubuntu-latest
+    environment: astro-production-release
+    permissions:
+      contents: write
+      id-token: write
+    env:
+      RELEASE_TAG: ${{ github.ref_name }}
+      REF_PROTECTED: ${{ github.ref_protected }}
+      RELEASE_ENVIRONMENT_READY: ${{ vars.ASTRO_RELEASE_ENVIRONMENT_READY }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.19.0'
+      - run: npm install --global npm@11.15.0 --ignore-scripts
+      - name: Verify protected tag, production history, source identity and registry
+        id: identity
+        run: node scripts/tag-release-cli.mjs preflight
+      - run: npm ci --ignore-scripts --legacy-peer-deps && npm run build --if-present && npm test && git diff --exit-code
+      - name: Export and inspect an isolated publishable archive
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir "$RUNNER_TEMP/astro-src" "$RUNNER_TEMP/astro-out"
+          git archive HEAD | tar -x -C "$RUNNER_TEMP/astro-src"
+          (cd "$RUNNER_TEMP/astro-src" && npm pack --ignore-scripts --pack-destination "$RUNNER_TEMP/astro-out")
+          node scripts/tag-release-cli.mjs inspect "$RUNNER_TEMP/astro-out/martlet-astro-${{ steps.identity.outputs.version }}.tgz"
+      - name: Recheck tag and version immediately before publication
+        run: node scripts/tag-release-cli.mjs preflight
+      - name: Publish the inspected archive with npm provenance
+        run: npm publish "$RUNNER_TEMP/astro-out/martlet-astro-${{ steps.identity.outputs.version }}.tgz" --access public --tag "${{ steps.identity.outputs.channel }}" --provenance
+      - name: Independently verify registry identity, integrity and bytes
+        run: node scripts/tag-release-cli.mjs verify-registry "$RUNNER_TEMP/astro-out/martlet-astro-${{ steps.identity.outputs.version }}.tgz"
+      - name: Recheck tag before release creation
+        run: node scripts/tag-release-cli.mjs verify-tag
+      - name: Create GitHub Release after registry verification
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CHANNEL: ${{ steps.identity.outputs.channel }}
+        run: |
+          set -euo pipefail
+          gh release view "$RELEASE_TAG" >/dev/null 2>&1 && { echo 'Release already exists; use recovery review' >&2; exit 1; }
+          if [ "$CHANNEL" = next ]; then
+            gh release create "$RELEASE_TAG" --verify-tag --generate-notes --prerelease
+          else
+            gh release create "$RELEASE_TAG" --verify-tag --generate-notes
+          fi
