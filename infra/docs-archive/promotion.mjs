@@ -35,8 +35,11 @@ export async function promotionRequest(request,env,authorize,pathname,prefixPath
   if(request.method!=='GET'&&request.method!=='HEAD')return fail(405,'method not allowed');
   let x;if(pathname==='/docs/latest.json'||pathname==='/docs/'){
    const p=await pointer(bucket,base+'promotion-pointer.json');if(!p)return fail(404,'latest unavailable');x=await history(bucket,base+`promotions/${p.hash}.json`,p.hash);
-   // Fail closed if an administrator has moved the catalog backwards or changed it.
-   const catalog=await pointer(bucket,base+'catalog-pointer.json');if(!catalog||catalog.hash!==x.value.catalogSha256)return fail(503,'latest needs reconciliation');
+   // Keep the old pointer live while a new catalog is being promoted, but
+   // stop serving it as soon as its release has been explicitly withdrawn.
+   const catalog=await pointer(bucket,base+'catalog-pointer.json');if(!catalog)return fail(503,'latest needs reconciliation');
+   const current=(await history(bucket,base+`catalogs/${catalog.hash}.json`,catalog.hash)).value;
+   if(!current.versions?.some(e=>e.version===x.value.version&&e.channel==='stable'&&e.supported))return fail(503,'latest needs reconciliation');
    if(pathname==='/docs/')return new Response(null,{status:302,headers:{location:`${prefixPath}/docs/v/${x.value.version}/`,'cache-control':'no-store'}});
   } else {const m=/^\/docs\/promotion-history\/([a-f0-9]{64})\.json$/.exec(pathname);if(!m)return fail(404,'not found');x=await history(bucket,base+`promotions/${m[1]}.json`,m[1]);}
   return new Response(request.method==='HEAD'?null:x.bytes,{headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'}});

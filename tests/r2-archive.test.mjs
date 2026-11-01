@@ -82,6 +82,18 @@ test('promotion and explicit withdrawal rollback retain archives and promotion h
  assert.equal((await send(e,'/_archive/promotion',{method:'PUT',body:r,headers:{'x-previous-promotion-sha256':'none'}})).status,409);
 });
 
+test('the supported current version remains live between catalog advance and promotion',async()=>{
+ const e=env(),m1=await upload(e,'2.0.0',Buffer.from('old')),m2=await upload(e,'2.1.0',Buffer.from('new'));
+ const entry=(v,m)=>({version:v,channel:'stable',manifestSha256:sha(m),supported:true,topics:['index.html']});
+ const c={schemaVersion:1,family:'martlet',framework:'astro',previousSha256:null,latestStable:'2.0.0',versions:[entry('2.0.0',m1)]},a=Buffer.from(JSON.stringify(c));
+ assert.equal((await send(e,'/_archive/catalog',{method:'PUT',body:a,headers:{'x-previous-catalog-sha256':'none'}})).status,201);
+ const p=Buffer.from(JSON.stringify({schemaVersion:1,family:'martlet',framework:'astro',previousSha256:null,catalogSha256:sha(a),version:'2.0.0',operation:'promote',reason:''}));
+ assert.equal((await send(e,'/_archive/promotion',{method:'PUT',body:p,headers:{'x-previous-promotion-sha256':'none'}})).status,201);
+ const next=Buffer.from(JSON.stringify({...c,previousSha256:sha(a),latestStable:'2.1.0',versions:[...c.versions,entry('2.1.0',m2)]}));
+ assert.equal((await send(e,'/_archive/catalog',{method:'PUT',body:next,headers:{'x-previous-catalog-sha256':sha(a)}})).status,201);
+ assert.equal((await send(e,'/docs/')).headers.get('location'),'/docs/v/2.0.0/');
+});
+
 test('client resumes interrupted upload, verifies remote bytes, and rejects a substituted trust anchor',async()=>{
  const {mkdtemp,mkdir,writeFile,rm}=await import('node:fs/promises'),{tmpdir}=await import('node:os'),{join}=await import('node:path');
  const {createManifest,sha256}=await import('../scripts/docs-versions/contract.mjs'),{publishCandidate,verifyPublished,advanceCatalog,verifyCatalogHistory,advancePromotion}=await import('../infra/docs-archive/client.mjs');
