@@ -24,12 +24,15 @@ const launchOptions=engine==='chromium'&&process.env.PLAYWRIGHT_EXECUTABLE_PATH?
 const browser=await ({chromium,firefox,webkit})[engine].launch(launchOptions);
 try{
   for(const enabled of [false,true]){
+    console.log(`Checking ${engine} at ${base}, JavaScript ${enabled?'enabled':'disabled'}`);
     const context=await browser.newContext({javaScriptEnabled:enabled}),page=await context.newPage(),assetFailures=[];
     page.on('response',response=>{if(response.url().startsWith(origin)&&response.status()>=400)assetFailures.push(`${response.status()} ${response.url()}`);});
     page.on('requestfailed',request=>{if(request.url().startsWith(origin))assetFailures.push(`failed ${request.url()}`);});
     try {
       const response=await page.goto(`${origin}${base}documentation/`);assert.equal(response.status(),200);
-      await page.evaluate(()=>document.fonts.ready);
+      // Network idle waits for fonts and assets without relying on an in-page
+      // promise, which can hang in Firefox with JavaScript disabled.
+      await page.waitForLoadState('networkidle',{timeout:15000});
       const nav=page.getByRole('navigation',{name:'Documentation versions'});assert.equal(await nav.count(),1);
       assert.equal(await nav.getByRole('link',{name:/current/}).getAttribute('aria-current'),'page');
       assert.match(await page.locator('meta[name="robots"]').getAttribute('content'),/noindex/);

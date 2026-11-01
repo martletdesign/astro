@@ -34,7 +34,13 @@ export async function registryState(fetcher,registry,name,version) {
   try {
     const root=new URL(registry); if(root.protocol!=='https:') return 'unknown';
     const url=new URL(encodeURIComponent(name),root).href;
-    const pkg=await fetcher(url); if(pkg.status!==200 || (await pkg.json()).name!==name) return 'unknown';
+    const pkg=await fetcher(url); if(pkg.status!==200) return 'unknown';
+    const metadata=await pkg.json();
+    if(metadata?.name!==name || !metadata.versions || typeof metadata.versions!=='object' || Array.isArray(metadata.versions)) return 'unknown';
+    if(Object.hasOwn(metadata.versions,version)) {
+      const existing=metadata.versions[version];
+      return existing?.name===name && existing.version===version?'present':'unknown';
+    }
     const found=await fetcher(`${url}/${encodeURIComponent(version)}`);
     if(found.status===404) return 'absent';
     if(found.status!==200) return 'unknown';

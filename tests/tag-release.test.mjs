@@ -27,10 +27,13 @@ test('tag protection, event SHA, first-parent and remote ref all gate release',(
 });
 test('registry uncertainty fails closed and existing versions are rejected',async()=>{
   const res=(status,body)=>({status,json:async()=>body});
-  async function check(items) {return registryState(async()=>{const r=items.shift();if(r instanceof Error)throw r;return r;},'https://registry.npmjs.org/','@martlet/astro','2.2.3');}
-  assert.equal(await check([res(200,{name:'@martlet/astro'}),res(404)]),'absent');
-  assert.equal(await check([res(200,{name:'@martlet/astro'}),res(200,{name:'@martlet/astro',version:'2.2.3'})]),'present');
-  for(const items of [[res(404)], [res(403)], [new Error('offline')], [res(200,{name:'@martlet/astro'}),res(500)]]) assert.equal(await check(items),'unknown');
+  async function check(items) {return registryState(async()=>{const r=items.shift();if(r instanceof Error)throw r;if(!r)throw Error('unexpected request');return r;},'https://registry.npmjs.org/','@martlet/astro','2.2.3');}
+  const root={name:'@martlet/astro',versions:{}};
+  assert.equal(await check([res(200,root),res(404)]),'absent');
+  assert.equal(await check([res(200,root),res(200,{name:'@martlet/astro',version:'2.2.3'})]),'present');
+  assert.equal(await check([res(200,{...root,versions:{'2.2.3':{name:'@martlet/astro',version:'2.2.3'}}}),res(404)]),'present');
+  assert.equal(await check([res(200,{...root,versions:{'2.2.3':{name:'@other/astro',version:'2.2.3'}}}),res(404)]),'unknown');
+  for(const items of [[res(404)], [res(403)], [new Error('offline')], [res(200,{name:'@martlet/astro'})], [res(200,{...root,versions:[]})], [res(200,root),res(500)]]) assert.equal(await check(items),'unknown');
 });
 test('registry package identity, bytes and integrity must match',()=>{
   const local=Buffer.from('reviewed'), metadata={name:'@martlet/astro',version:'2.2.3',dist:{integrity:`sha512-${createHash('sha512').update(local).digest('base64')}`}};
