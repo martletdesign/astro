@@ -3,8 +3,18 @@ import assert from 'node:assert/strict';
 import {mkdtemp,mkdir,writeFile,readFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {sha256} from '../scripts/docs-versions/contract.mjs';
+import {sha256,validateCatalog} from '../scripts/docs-versions/contract.mjs';
 import {createSnapshot} from '../scripts/docs-versions/snapshot.mjs';
+
+test('catalog handles prerelease-only history without treating a prerelease as latest stable',()=>{
+  const entry={version:'2.0.0-rc.1',channel:'prerelease',supported:true,manifestSha256:'a'.repeat(64),topics:['index.html']};
+  const catalog={schemaVersion:1,family:'martlet',framework:'astro',latestStable:null,versions:[entry]};
+  assert.doesNotThrow(()=>validateCatalog(catalog));
+  assert.throws(()=>validateCatalog({...catalog,latestStable:entry.version}),/Latest/);
+  const stable={version:'2.0.0',channel:'stable',supported:true,manifestSha256:'b'.repeat(64),topics:['index.html']};
+  assert.throws(()=>validateCatalog({...catalog,versions:[entry,stable]}),/Latest/);
+  assert.doesNotThrow(()=>validateCatalog({...catalog,latestStable:'2.0.0',versions:[entry,stable]}));
+});
 
 test('a pinned local snapshot is created once, and older archives cannot be replaced or corrupted',async()=>{
   const root=await mkdtemp(join(tmpdir(),'docs-snapshot-'));try{

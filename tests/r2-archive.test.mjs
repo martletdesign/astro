@@ -1,4 +1,6 @@
 import {test} from 'node:test';
+import {readFileSync} from 'node:fs';
+const family=JSON.parse(readFileSync(new URL('../docs-release-lock.json',import.meta.url),'utf8')).family;
 import assert from 'node:assert/strict';
 import {createHash,timingSafeEqual} from 'node:crypto';
 import worker from '../infra/docs-archive/worker.mjs';
@@ -12,9 +14,9 @@ class MockR2 {
 }
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
 const token='this-is-a-secret-token-32-bytes-minimum';
-const env=()=>({FAMILY:'martlet',ARCHIVES:new MockR2(),ARCHIVE_WRITE_TOKEN:token});
+const env=()=>({FAMILY:family,ARCHIVES:new MockR2(),ARCHIVE_WRITE_TOKEN:token});
 const send=(env,path,{method='GET',body,auth=true,headers={}}={})=>worker.fetch(new Request('https://example.invalid'+path,{method,body,headers:{...(auth?{authorization:`Bearer ${token}`}:{}) ,...headers}}),env);
-function manifestFor(version,bytes) {return {schemaVersion:1,family:'martlet',framework:'astro',docsVersion:version,basePath:`/docs/v/${version}/`,implementation:{kind:'npm',name:'@martlet/astro',version,tag:`v${version}`},core:{name:'@martlet/core',version:'2.2.3',integrity:`sha512-${Buffer.alloc(64,1).toString('base64')}`},source:{repository:'martletdesign/astro',commit:'a'.repeat(40),tag:`v${version}`},indexing:'noindex',files:[{path:'index.html',size:bytes.length,sha256:sha(bytes)}]};}
+function manifestFor(version,bytes) {return {schemaVersion:1,family,framework:'astro',docsVersion:version,basePath:`/docs/v/${version}/`,implementation:{kind:'npm',name:`@${family}/astro`,version,tag:`v${version}`},core:{name:`@${family}/core`,version:family==='martlet'?'2.2.3':'2.2.4',integrity:`sha512-${Buffer.alloc(64,1).toString('base64')}`},source:{repository:`${family}design/astro`,commit:'a'.repeat(40),tag:`v${version}`},indexing:'noindex',files:[{path:'index.html',size:bytes.length,sha256:sha(bytes)}]};}
 async function upload(env,version,bytes){const root=`/_archive/v/${version}/`,manifest=Buffer.from(JSON.stringify(manifestFor(version,bytes)));assert.equal((await send(env,root+'index.html',{method:'PUT',body:bytes})).status,201);assert.equal((await send(env,root+'manifest.json',{method:'PUT',body:manifest,headers:{'x-manifest-sha256':sha(manifest)}})).status,201);return manifest;}
 test('conditional creation, complete manifest and independently retrievable bytes',async()=>{
  const e=env(),first=Buffer.from('<h1>first</h1>'),m=await upload(e,'2.0.0',first);
@@ -24,6 +26,32 @@ test('conditional creation, complete manifest and independently retrievable byte
  await upload(e,'2.1.0',Buffer.from('<h1>second</h1>'));assert.equal(await (await send(e,'/docs/v/2.0.0/')).text(),first.toString());
  assert.equal((await send(e,'/docs/v/2.0.0/unknown.js')).status,404);
 });
+test('version directories redirect before resolving relative assets and preserve subpaths',async()=>{
+ const e=env();e.DEPLOY_PREFIX='/preview';const html=Buffer.from('<link rel="stylesheet" href="style.css">'),css=Buffer.from('body{}');
+ const manifest=manifestFor('2.0.0',html);manifest.files.push({path:'guide/index.html',size:html.length,sha256:sha(html)},{path:'guide/style.css',size:css.length,sha256:sha(css)});
+ for(const [path,body] of [['index.html',html],['guide/index.html',html],['guide/style.css',css]])assert.equal((await send(e,`/preview/_archive/v/2.0.0/${path}`,{method:'PUT',body})).status,201);
+ const bytes=Buffer.from(JSON.stringify(manifest));assert.equal((await send(e,'/preview/_archive/v/2.0.0/manifest.json',{method:'PUT',body:bytes,headers:{'x-manifest-sha256':sha(bytes)}})).status,201);
+ for(const path of ['/preview/docs/v/2.0.0','/preview/docs/v/2.0.0/guide']){const r=await send(e,path);assert.equal(r.status,308);assert.equal(r.headers.get('location'),`${path}/`);assert.equal((await send(e,path,{method:'HEAD'})).status,308);}
+ const root=await send(e,'/preview/docs/v/2.0.0/guide/');assert.equal(root.status,200);const asset=await send(e,'/preview/docs/v/2.0.0/guide/style.css');assert.equal(asset.headers.get('content-type'),'text/css; charset=utf-8');assert.match(asset.headers.get('cache-control'),/immutable/);
+ assert.equal((await send(e,'/preview/docs/v/2.0.0/missing')).status,404);
+});
+test('chunked oversized upload is cancelled without trusting content length',async()=>{
+ for(const [path,chunk] of [['/_archive/v/2.0.0/large.bin',1024*1024],['/_archive/catalog',128*1024],['/_archive/promotion',16*1024]]){
+  const e=env();let produced=0,cancelled=false;
+  const stream=new ReadableStream({pull(controller){produced++;controller.enqueue(new Uint8Array(chunk));if(produced===24)controller.close();},cancel(){cancelled=true;}});
+  const req=new Request(`https://example.invalid${path}`,{method:'PUT',body:stream,duplex:'half',headers:{authorization:`Bearer ${token}`}});
+  assert.equal((await worker.fetch(req,e)).status,413);assert.equal(cancelled,true);assert.ok(produced<24);assert.equal(e.ARCHIVES.data.size,0);
+ }
+});
+test('prerelease-only catalogs have no latest stable and cannot promote prereleases',async()=>{
+ const e=env(),v='2.0.0-rc.1',manifest=await upload(e,v,Buffer.from('preview'));
+ const first={schemaVersion:1,family,framework:'astro',previousSha256:null,latestStable:null,versions:[{version:v,channel:'prerelease',manifestSha256:sha(manifest),supported:true,topics:['index.html']}]};
+ const invalid=Buffer.from(JSON.stringify({...first,latestStable:v}));assert.equal((await send(e,'/_archive/catalog',{method:'PUT',body:invalid,headers:{'x-previous-catalog-sha256':'none'}})).status,400);
+ const bytes=Buffer.from(JSON.stringify(first));assert.equal((await send(e,'/_archive/catalog',{method:'PUT',body:bytes,headers:{'x-previous-catalog-sha256':'none'}})).status,201);
+ const promotion={schemaVersion:1,family,framework:'astro',previousSha256:null,catalogSha256:sha(bytes),version:v,operation:'promote',reason:''};
+ assert.equal((await send(e,'/_archive/promotion',{method:'PUT',body:JSON.stringify(promotion),headers:{'x-previous-promotion-sha256':'none'}})).status,400);
+ assert.equal((await send(e,'/docs/')).status,404);
+});
 test('rejects unauthorized writes, incomplete commits, replacement and corrupted objects',async()=>{
  const e=env(),b=Buffer.from('expected'),m=Buffer.from(JSON.stringify(manifestFor('2.0.0',b))),root='/_archive/v/2.0.0/';
  assert.equal((await send(e,root+'index.html',{method:'PUT',body:b,auth:false})).status,401);
@@ -32,19 +60,19 @@ test('rejects unauthorized writes, incomplete commits, replacement and corrupted
  assert.equal((await send(e,root+'index.html',{method:'PUT',body:'evil'})).status,409);
  assert.equal((await send(e,root+'manifest.json',{method:'PUT',body:m,headers:{'x-manifest-sha256':'f'.repeat(64)}})).status,400);
  assert.equal((await send(e,root+'manifest.json',{method:'PUT',body:m,headers:{'x-manifest-sha256':sha(m)}})).status,201);
- e.ARCHIVES.data.set('martlet/astro/2.0.0/index.html',Buffer.from('tampered'));
+ e.ARCHIVES.data.set(`${family}/astro/2.0.0/index.html`,Buffer.from('tampered'));
  assert.equal((await send(e,'/docs/v/2.0.0/')).status,503);
 });
 test('rejects unsafe identities and upload paths',async()=>{
  const e=env();assert.equal((await send(e,'/_archive/v/01.0.0/index.html',{method:'PUT',body:'x'})).status,404);
  assert.equal((await send(e,'/_archive/v/2.0.0/%2fetc',{method:'PUT',body:'x'})).status,400);
- const wrong=manifestFor('2.0.0',Buffer.from('a'));wrong.family='krigsvold';const m=Buffer.from(JSON.stringify(wrong));
+ const wrong=manifestFor('2.0.0',Buffer.from('a'));wrong.family=family==='martlet'?'krigsvold':'martlet';const m=Buffer.from(JSON.stringify(wrong));
  assert.equal((await send(e,'/_archive/v/2.0.0/manifest.json',{method:'PUT',body:m,headers:{'x-manifest-sha256':sha(m)}})).status,400);
 });
 
 test('catalog history is append-only and competing pointer advances cannot both win',async()=>{
  const e=env(),v='2.0.0',bytes=Buffer.from('one'),manifest=await upload(e,v,bytes),entry={version:v,channel:'stable',manifestSha256:sha(manifest),supported:true,topics:['index.html']};
- const first={schemaVersion:1,family:'martlet',framework:'astro',previousSha256:null,latestStable:v,versions:[entry]};
+ const first={schemaVersion:1,family,framework:'astro',previousSha256:null,latestStable:v,versions:[entry]};
  const a=Buffer.from(JSON.stringify(first));assert.equal((await send(e,'/_archive/catalog',{method:'PUT',body:a,headers:{'x-previous-catalog-sha256':'none'}})).status,201);
  const altered={...first,previousSha256:sha(a),versions:[{...entry,manifestSha256:'f'.repeat(64)}]};
  assert.equal((await send(e,'/_archive/catalog',{method:'PUT',body:JSON.stringify(altered),headers:{'x-previous-catalog-sha256':sha(a)}})).status,409);
@@ -66,9 +94,9 @@ test('subpath routes serve only the configured prefix',async()=>{
 test('promotion and explicit withdrawal rollback retain archives and promotion history',async()=>{
  const e=env(),m1=await upload(e,'2.0.0',Buffer.from('old')),m2=await upload(e,'2.1.0',Buffer.from('new'));
  const entry=(v,m)=>({version:v,channel:'stable',manifestSha256:sha(m),supported:true,topics:['index.html']});
- const first={schemaVersion:1,family:'martlet',framework:'astro',previousSha256:null,latestStable:'2.1.0',versions:[entry('2.0.0',m1),entry('2.1.0',m2)]},catalog=Buffer.from(JSON.stringify(first));
+ const first={schemaVersion:1,family,framework:'astro',previousSha256:null,latestStable:'2.1.0',versions:[entry('2.0.0',m1),entry('2.1.0',m2)]},catalog=Buffer.from(JSON.stringify(first));
  assert.equal((await send(e,'/_archive/catalog',{method:'PUT',body:catalog,headers:{'x-previous-catalog-sha256':'none'}})).status,201);
- const release={schemaVersion:1,family:'martlet',framework:'astro',previousSha256:null,catalogSha256:sha(catalog),version:'2.1.0',operation:'promote',reason:''},r=Buffer.from(JSON.stringify(release));
+ const release={schemaVersion:1,family,framework:'astro',previousSha256:null,catalogSha256:sha(catalog),version:'2.1.0',operation:'promote',reason:''},r=Buffer.from(JSON.stringify(release));
  assert.equal((await send(e,'/_archive/promotion',{method:'PUT',body:r,headers:{'x-previous-promotion-sha256':'none'}})).status,201);
  assert.equal((await send(e,'/docs/')).headers.get('location'),'/docs/v/2.1.0/');
  const withdrawn={...first,previousSha256:sha(catalog),latestStable:'2.0.0',versions:[first.versions[0],{...first.versions[1],supported:false}]},w=Buffer.from(JSON.stringify(withdrawn));
@@ -85,9 +113,9 @@ test('promotion and explicit withdrawal rollback retain archives and promotion h
 test('the supported current version remains live between catalog advance and promotion',async()=>{
  const e=env(),m1=await upload(e,'2.0.0',Buffer.from('old')),m2=await upload(e,'2.1.0',Buffer.from('new'));
  const entry=(v,m)=>({version:v,channel:'stable',manifestSha256:sha(m),supported:true,topics:['index.html']});
- const c={schemaVersion:1,family:'martlet',framework:'astro',previousSha256:null,latestStable:'2.0.0',versions:[entry('2.0.0',m1)]},a=Buffer.from(JSON.stringify(c));
+ const c={schemaVersion:1,family,framework:'astro',previousSha256:null,latestStable:'2.0.0',versions:[entry('2.0.0',m1)]},a=Buffer.from(JSON.stringify(c));
  assert.equal((await send(e,'/_archive/catalog',{method:'PUT',body:a,headers:{'x-previous-catalog-sha256':'none'}})).status,201);
- const p=Buffer.from(JSON.stringify({schemaVersion:1,family:'martlet',framework:'astro',previousSha256:null,catalogSha256:sha(a),version:'2.0.0',operation:'promote',reason:''}));
+ const p=Buffer.from(JSON.stringify({schemaVersion:1,family,framework:'astro',previousSha256:null,catalogSha256:sha(a),version:'2.0.0',operation:'promote',reason:''}));
  assert.equal((await send(e,'/_archive/promotion',{method:'PUT',body:p,headers:{'x-previous-promotion-sha256':'none'}})).status,201);
  const next=Buffer.from(JSON.stringify({...c,previousSha256:sha(a),latestStable:'2.1.0',versions:[...c.versions,entry('2.1.0',m2)]}));
  assert.equal((await send(e,'/_archive/catalog',{method:'PUT',body:next,headers:{'x-previous-catalog-sha256':sha(a)}})).status,201);
@@ -109,20 +137,20 @@ test('client resumes interrupted upload, verifies remote bytes, and rejects a su
   await publishCandidate(options);await publishCandidate(options);
   assert.equal((await verifyPublished(options)).files,2);
   const entry={version,channel:'stable',manifestSha256:expectedSha256,supported:true,topics:['index.html']};
-  const genesis={schemaVersion:1,family:'martlet',framework:'astro',previousSha256:null,latestStable:version,versions:[entry]};
+  const genesis={schemaVersion:1,family,framework:'astro',previousSha256:null,latestStable:version,versions:[entry]};
   const first=await advanceCatalog({...options,catalog:genesis,expectedPreviousSha256:null});
   assert.equal((await advanceCatalog({...options,catalog:genesis,expectedPreviousSha256:null})).recovered,true);
   const next={...genesis,previousSha256:first.headSha256};
   const second=await advanceCatalog({...options,catalog:next,expectedPreviousSha256:first.headSha256});
   assert.equal((await verifyCatalogHistory({...options,anchorSha256:first.headSha256})).headSha256,second.headSha256);
-  const promotion={schemaVersion:1,family:'martlet',framework:'astro',previousSha256:null,catalogSha256:second.headSha256,version,operation:'promote',reason:''};
+  const promotion={schemaVersion:1,family,framework:'astro',previousSha256:null,catalogSha256:second.headSha256,version,operation:'promote',reason:''};
   const promoted=await advancePromotion({...options,promotion,expectedPreviousSha256:null,expectedCatalogSha256:second.headSha256});
   assert.equal((await advancePromotion({...options,promotion,expectedPreviousSha256:null,expectedCatalogSha256:second.headSha256})).recovered,true);
   assert.match(promoted.headSha256,/^[a-f0-9]{64}$/);
   await assert.rejects(verifyCatalogHistory({...options,anchorSha256:'a'.repeat(64)}),/trusted anchor/);
   await assert.rejects(advanceCatalog({...options,catalog:genesis,expectedPreviousSha256:null}),/already exists/);
   await assert.rejects(verifyPublished({...options,expectedSha256:'f'.repeat(64)}),/digest mismatch/);
-  e.ARCHIVES.data.set('martlet/astro/2.0.0/app.js',Buffer.from('tampered'));
+  e.ARCHIVES.data.set(`${family}/astro/2.0.0/app.js`,Buffer.from('tampered'));
   await assert.rejects(verifyPublished(options),/Missing archive file/);
  }finally{globalThis.fetch=originalFetch;await rm(root,{recursive:true,force:true});}
 });
