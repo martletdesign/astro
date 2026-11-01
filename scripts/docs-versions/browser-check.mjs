@@ -12,6 +12,7 @@ const types={'.html':'text/html','.css':'text/css','.js':'text/javascript','.wof
 const server=createServer(async(req,res)=>{try{
   const path=new URL(req.url,'http://localhost').pathname;
   if(path===`${prefix}/docs/catalog.json`){res.writeHead(200,{'Content-Type':'application/json'}).end(JSON.stringify(catalog));return;}
+  if(path===`${prefix}/docs/versions/`){res.writeHead(200,{'Content-Type':'text/html'}).end('<h1>All documentation versions</h1><a href="'+prefix+'/docs/v/2.1.0/">v2.1.0 (newer)</a>');return;}
   if(path.startsWith(`${prefix}/docs/v/1.0.0/`)){res.writeHead(200,{'Content-Type':'text/html'}).end('<h1>Earlier version</h1>');return;}
   if(!path.startsWith(base)){res.writeHead(404).end();return;}
   let tail=decodeURIComponent(path.slice(base.length));if(!tail||tail.endsWith('/'))tail+='index.html';
@@ -35,6 +36,7 @@ try{
       await page.waitForLoadState('networkidle',{timeout:15000});
       const nav=page.getByRole('navigation',{name:'Documentation versions'});assert.equal(await nav.count(),1);
       assert.equal(await nav.getByRole('link',{name:/current/}).getAttribute('aria-current'),'page');
+      assert.equal(await nav.getByRole('link',{name:'All documentation versions'}).getAttribute('href'),`${prefix}/docs/versions/`);
       assert.match(await page.locator('meta[name="robots"]').getAttribute('content'),/noindex/);
       if(enabled){
         const earlier=nav.getByRole('link',{name:/v1\.0\.0/});await earlier.waitFor();
@@ -43,7 +45,9 @@ try{
         await page.keyboard.press('Tab');assert.ok(await page.evaluate(()=>document.activeElement?.tagName==='A'));
         const result=await new AxeBuilder({page}).analyze();assert.deepEqual(result.violations.map(x=>x.id),[]);
         await earlier.click();assert.equal(new URL(page.url()).pathname,`${prefix}/docs/v/1.0.0/`);
+        await page.goBack();
       }
+      await page.getByRole('link',{name:'All documentation versions'}).click();assert.equal(new URL(page.url()).pathname,`${prefix}/docs/versions/`);assert.equal(await page.getByRole('link',{name:'v2.1.0 (newer)'}).count(),1);
       assert.deepEqual(assetFailures,[], 'Archived local assets must resolve');
     } finally {await context.close();}
   }

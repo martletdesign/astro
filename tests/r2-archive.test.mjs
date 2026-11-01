@@ -45,9 +45,11 @@ test('chunked oversized upload is cancelled without trusting content length',asy
 });
 test('prerelease-only catalogs have no latest stable and cannot promote prereleases',async()=>{
  const e=env(),v='2.0.0-rc.1',manifest=await upload(e,v,Buffer.from('preview'));
- const first={schemaVersion:1,family,framework:'astro',previousSha256:null,latestStable:null,versions:[{version:v,channel:'prerelease',manifestSha256:sha(manifest),supported:true,topics:['index.html']}]};
+ assert.equal((await send(e,'/docs/versions/')).status,503);
+ const first={schemaVersion:1,family,framework:'astro',previousSha256:null,latestStable:null,versions:[{version:v,channel:'prerelease',manifestSha256:sha(manifest),supported:false,topics:['index.html']}]};
  const invalid=Buffer.from(JSON.stringify({...first,latestStable:v}));assert.equal((await send(e,'/_archive/catalog',{method:'PUT',body:invalid,headers:{'x-previous-catalog-sha256':'none'}})).status,400);
  const bytes=Buffer.from(JSON.stringify(first));assert.equal((await send(e,'/_archive/catalog',{method:'PUT',body:bytes,headers:{'x-previous-catalog-sha256':'none'}})).status,201);
+ const index=await send(e,'/docs/versions/');assert.equal(index.status,200);assert.equal(index.headers.get('cache-control'),'no-store');const html=await index.text();assert.match(html,/2\.0\.0-rc\.1/);assert.match(html,/prerelease/);assert.match(html,/unsupported/);assert.equal((await send(e,'/docs/versions/',{method:'HEAD'})).status,200);
  const promotion={schemaVersion:1,family,framework:'astro',previousSha256:null,catalogSha256:sha(bytes),version:v,operation:'promote',reason:''};
  assert.equal((await send(e,'/_archive/promotion',{method:'PUT',body:JSON.stringify(promotion),headers:{'x-previous-promotion-sha256':'none'}})).status,400);
  assert.equal((await send(e,'/docs/')).status,404);
@@ -88,6 +90,9 @@ test('subpath routes serve only the configured prefix',async()=>{
  assert.equal((await send(e,'/preview/_archive/v/2.0.0/index.html',{method:'PUT',body:b})).status,201);
  assert.equal((await send(e,'/preview/_archive/v/2.0.0/manifest.json',{method:'PUT',body:m,headers:{'x-manifest-sha256':sha(m)}})).status,201);
  assert.equal(await (await send(e,'/preview/docs/v/2.0.0/')).text(),'x');
+ const c={schemaVersion:1,family,framework:'astro',previousSha256:null,latestStable:'2.0.0',versions:[{version:'2.0.0',channel:'stable',manifestSha256:sha(m),supported:true,topics:['index.html']}]};
+ assert.equal((await send(e,'/preview/_archive/catalog',{method:'PUT',body:JSON.stringify(c),headers:{'x-previous-catalog-sha256':'none'}})).status,201);
+ assert.match(await (await send(e,'/preview/docs/versions/')).text(),/href="\/preview\/docs\/v\/2.0.0\/"/);
  assert.equal((await send(e,'/docs/v/2.0.0/')).status,404);
 });
 
@@ -119,6 +124,7 @@ test('the supported current version remains live between catalog advance and pro
  assert.equal((await send(e,'/_archive/promotion',{method:'PUT',body:p,headers:{'x-previous-promotion-sha256':'none'}})).status,201);
  const next=Buffer.from(JSON.stringify({...c,previousSha256:sha(a),latestStable:'2.1.0',versions:[...c.versions,entry('2.1.0',m2)]}));
  assert.equal((await send(e,'/_archive/catalog',{method:'PUT',body:next,headers:{'x-previous-catalog-sha256':sha(a)}})).status,201);
+ const index=await (await send(e,'/docs/versions/')).text();assert.match(index,/href="\/docs\/v\/2.0.0\/"/);assert.match(index,/href="\/docs\/v\/2.1.0\/"/);
  assert.equal((await send(e,'/docs/')).headers.get('location'),'/docs/v/2.0.0/');
 });
 
