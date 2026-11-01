@@ -2,6 +2,7 @@
 // access. R2 conditional writes provide create-only object creation; the
 // public endpoint exposes only the immutable committed manifest's inventory.
 import {catalogRequest} from './catalog.mjs';
+import {promotionRequest} from './promotion.mjs';
 const encoder = new TextEncoder();
 const versionRE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/;
 const digestRE = /^[a-f0-9]{64}$/;
@@ -52,6 +53,7 @@ export default { async fetch(request, env) {
   if(prefixPath&&!url.pathname.startsWith(prefixPath+'/'))return fail(404,'not found');
   const pathname=url.pathname.slice(prefixPath.length);
   if(pathname==='/_archive/catalog'||pathname==='/docs/catalog.json'||pathname.startsWith('/docs/catalog-history/'))return catalogRequest(request,env,authorized,pathname);
+  if(pathname==='/_archive/promotion'||pathname==='/docs/latest.json'||pathname==='/docs/'||pathname.startsWith('/docs/promotion-history/'))return promotionRequest(request,env,authorized,pathname,prefixPath);
   const segments = pathname.split('/');
   const upload = segments[1] === '_archive' && segments[2] === 'v';
   const read = segments[1] === 'docs' && segments[2] === 'v';

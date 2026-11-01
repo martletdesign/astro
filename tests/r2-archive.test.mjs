@@ -63,9 +63,28 @@ test('subpath routes serve only the configured prefix',async()=>{
  assert.equal((await send(e,'/docs/v/2.0.0/')).status,404);
 });
 
+test('promotion and explicit withdrawal rollback retain archives and promotion history',async()=>{
+ const e=env(),m1=await upload(e,'2.0.0',Buffer.from('old')),m2=await upload(e,'2.1.0',Buffer.from('new'));
+ const entry=(v,m)=>({version:v,channel:'stable',manifestSha256:sha(m),supported:true,topics:['index.html']});
+ const first={schemaVersion:1,family:'martlet',framework:'astro',previousSha256:null,latestStable:'2.1.0',versions:[entry('2.0.0',m1),entry('2.1.0',m2)]},catalog=Buffer.from(JSON.stringify(first));
+ assert.equal((await send(e,'/_archive/catalog',{method:'PUT',body:catalog,headers:{'x-previous-catalog-sha256':'none'}})).status,201);
+ const release={schemaVersion:1,family:'martlet',framework:'astro',previousSha256:null,catalogSha256:sha(catalog),version:'2.1.0',operation:'promote',reason:''},r=Buffer.from(JSON.stringify(release));
+ assert.equal((await send(e,'/_archive/promotion',{method:'PUT',body:r,headers:{'x-previous-promotion-sha256':'none'}})).status,201);
+ assert.equal((await send(e,'/docs/')).headers.get('location'),'/docs/v/2.1.0/');
+ const withdrawn={...first,previousSha256:sha(catalog),latestStable:'2.0.0',versions:[first.versions[0],{...first.versions[1],supported:false}]},w=Buffer.from(JSON.stringify(withdrawn));
+ assert.equal((await send(e,'/_archive/catalog',{method:'PUT',body:w,headers:{'x-previous-catalog-sha256':sha(catalog)}})).status,201);
+ assert.equal((await send(e,'/docs/')).status,503);
+ const rollback={...release,previousSha256:sha(r),catalogSha256:sha(w),version:'2.0.0',operation:'rollback',reason:'Withdraw broken release'},rb=Buffer.from(JSON.stringify(rollback));
+ assert.equal((await send(e,'/_archive/promotion',{method:'PUT',body:rb,headers:{'x-previous-promotion-sha256':sha(r)}})).status,201);
+ assert.equal((await send(e,'/docs/')).headers.get('location'),'/docs/v/2.0.0/');
+ assert.equal((await send(e,`/docs/promotion-history/${sha(r)}.json`)).status,200);
+ assert.equal(await (await send(e,'/docs/v/2.1.0/')).text(),'new');
+ assert.equal((await send(e,'/_archive/promotion',{method:'PUT',body:r,headers:{'x-previous-promotion-sha256':'none'}})).status,409);
+});
+
 test('client resumes interrupted upload, verifies remote bytes, and rejects a substituted trust anchor',async()=>{
  const {mkdtemp,mkdir,writeFile,rm}=await import('node:fs/promises'),{tmpdir}=await import('node:os'),{join}=await import('node:path');
- const {createManifest,sha256}=await import('../scripts/docs-versions/contract.mjs'),{publishCandidate,verifyPublished,advanceCatalog,verifyCatalogHistory}=await import('../infra/docs-archive/client.mjs');
+ const {createManifest,sha256}=await import('../scripts/docs-versions/contract.mjs'),{publishCandidate,verifyPublished,advanceCatalog,verifyCatalogHistory,advancePromotion}=await import('../infra/docs-archive/client.mjs');
  const root=await mkdtemp(join(tmpdir(),'remote-archive-')),e=env(),version='2.0.0',dir=join(root,version),originalFetch=globalThis.fetch;
  try{
   await mkdir(dir);await writeFile(join(dir,'index.html'),'<meta name="robots" content="noindex"><h1>One</h1>');await writeFile(join(dir,'app.js'),'console.log(1)');
@@ -84,6 +103,10 @@ test('client resumes interrupted upload, verifies remote bytes, and rejects a su
   const next={...genesis,previousSha256:first.headSha256};
   const second=await advanceCatalog({...options,catalog:next,expectedPreviousSha256:first.headSha256});
   assert.equal((await verifyCatalogHistory({...options,anchorSha256:first.headSha256})).headSha256,second.headSha256);
+  const promotion={schemaVersion:1,family:'martlet',framework:'astro',previousSha256:null,catalogSha256:second.headSha256,version,operation:'promote',reason:''};
+  const promoted=await advancePromotion({...options,promotion,expectedPreviousSha256:null,expectedCatalogSha256:second.headSha256});
+  assert.equal((await advancePromotion({...options,promotion,expectedPreviousSha256:null,expectedCatalogSha256:second.headSha256})).recovered,true);
+  assert.match(promoted.headSha256,/^[a-f0-9]{64}$/);
   await assert.rejects(verifyCatalogHistory({...options,anchorSha256:'a'.repeat(64)}),/trusted anchor/);
   await assert.rejects(advanceCatalog({...options,catalog:genesis,expectedPreviousSha256:null}),/already exists/);
   await assert.rejects(verifyPublished({...options,expectedSha256:'f'.repeat(64)}),/digest mismatch/);

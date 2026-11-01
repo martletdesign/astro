@@ -65,3 +65,24 @@ export async function advanceCatalog({base,token,catalog,expectedPreviousSha256}
   if(write.status!==200&&write.status!==201)throw Error(`Catalog advance failed: ${write.status}`);
   const read=await response(`${url}/docs/catalog.json`);await expectBytes(read,bytes);return {headSha256:digest};
 }
+
+export async function advancePromotion({base,token,promotion,expectedPreviousSha256,expectedCatalogSha256}) {
+  const url=origin(base);if(typeof token!=='string'||token.length<32)throw Error('Missing archive authorization');
+  if(promotion.previousSha256!==expectedPreviousSha256||promotion.catalogSha256!==expectedCatalogSha256||!/^[a-f0-9]{64}$/.test(expectedCatalogSha256||'')||!(expectedPreviousSha256===null||/^[a-f0-9]{64}$/.test(expectedPreviousSha256)))throw Error('Missing independently pinned promotion or catalog parent');
+  const catalog=await response(`${url}/docs/catalog.json`);if(!catalog.ok)throw Error('Catalog unavailable');const catalogBytes=Buffer.from(await catalog.arrayBuffer());
+  if(sha256(catalogBytes)!==expectedCatalogSha256)throw Error('Catalog changed since independent checkpoint');
+  const c=validateCatalog(JSON.parse(catalogBytes)),entry=c.versions.find(x=>x.version===promotion.version);
+  if(!entry||entry.channel!=='stable'||!entry.supported||c.latestStable!==promotion.version)throw Error('Invalid promotion target');
+  await verifyPublished({base,version:entry.version,expectedSha256:entry.manifestSha256});
+  const bytes=Buffer.from(JSON.stringify(promotion,null,2)+'\n'),digest=sha256(bytes),current=await response(`${url}/docs/latest.json`);
+  if(current.ok){const currentBytes=Buffer.from(await current.arrayBuffer());if(sha256(currentBytes)===digest)return {headSha256:digest,recovered:true};if(expectedPreviousSha256===null||sha256(currentBytes)!==expectedPreviousSha256)throw Error('Promotion changed since independent checkpoint');}
+  else if(expectedPreviousSha256===null){if(current.status!==404)throw Error('Promotion unavailable');}
+  else {
+    // A changed catalog deliberately makes the live pointer return 503 until
+    // reconciled. The immutable pinned decision remains independently readable.
+    const old=await response(`${url}/docs/promotion-history/${expectedPreviousSha256}.json`);if(!old.ok||sha256(Buffer.from(await old.arrayBuffer()))!==expectedPreviousSha256)throw Error('Previous promotion unavailable');
+  }
+  const write=await response(`${url}/_archive/promotion`,{method:'PUT',headers:{authorization:`Bearer ${token}`,'x-previous-promotion-sha256':expectedPreviousSha256??'none'},body:bytes});
+  if(write.status!==200&&write.status!==201)throw Error(`Promotion failed: ${write.status}`);
+  await expectBytes(await response(`${url}/docs/latest.json`),bytes);return {headSha256:digest};
+}
