@@ -55,8 +55,8 @@ try {
   assert.ok(guide.indexOf('martlet-sidebar__aside')<guide.indexOf('martlet-sidebar__main'));
   if(process.env.MARTLET_BROWSER === '1') execFileSync(process.execPath,[join(root,'scripts/browser.mjs'),join(site,'dist')],{cwd:root,stdio:'inherit',timeout:210000});
   // A host may install this starter beneath a prefix; test its emitted internal URLs.
-  await writeFile(join(site,'astro.config.mjs'), "import { defineConfig } from 'astro/config'; export default defineConfig({base:'/preview'});\n");
-  execFileSync('npm',['run','build'],{cwd:site,stdio:'inherit',timeout:180000});
+  // Preserve the starter's aliases and other configuration when changing base.
+  execFileSync('npm',['run','build'],{cwd:site,stdio:'inherit',timeout:180000,env:{...process.env,NIGHTJAR_BASE:'/preview'}});
   execFileSync(process.execPath,[join(root,'scripts/subpath-check.mjs'),join(site,'dist')],{cwd:root,stdio:'inherit',timeout:30000});
   console.log('Packed starter build passed: both modes, all font roles, local font assets, and native button behavior.');
 } finally { if (!process.env.MARTLET_KEEP_FIXTURE) await rm(temp,{recursive:true,force:true}); }
