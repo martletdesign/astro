@@ -38,11 +38,13 @@ export async function verifyCheckpointState({base,expectedCatalogHeadSha256,expe
   const earlier=validateCatalog(JSON.parse((await bytesAt(`${url}/docs/catalog-history/${previous}.json`,previous)).toString('utf8')));
   validateCatalog(catalogCurrent,earlier);catalogHash=previous;catalogCurrent=earlier;
  }
+ catalogsSeen.add(cp.catalogSha256);
  let current=promotion(await bytesAt(`${url}/docs/latest.json`,expectedPromotionHeadSha256),cp.family),hash=expectedPromotionHeadSha256;
  const seen=new Set();
  for(let count=0;count<1000;count++){
   need(!seen.has(hash),'Promotion cycle');seen.add(hash);
   const associated=validateCatalog(JSON.parse((await bytesAt(`${url}/docs/catalog-history/${current.catalogSha256}.json`,current.catalogSha256)).toString('utf8')));
+  need(catalogsSeen.has(current.catalogSha256),'Promotion catalog is outside pinned catalog history');
   need(associated.family===cp.family&&associated.framework===cp.framework&&associated.latestStable===current.version&&associated.versions.some(v=>v.version===current.version&&v.channel==='stable'&&v.supported),'Promotion is not backed by its catalog');
   if(hash===cp.promotionSha256){need(current.catalogSha256===cp.catalogSha256&&current.version===cp.version,'Checkpoint promotion mismatch');return {checkpointSha256:trusted.sha256,manifestSha256:cp.manifestSha256,catalogHeadSha256:expectedCatalogHeadSha256,promotionHeadSha256:expectedPromotionHeadSha256,files:archiveManifest.files.length};}
   need(digest.test(current.previousSha256||''),'Promotion history does not contain checkpoint');hash=current.previousSha256;

@@ -43,6 +43,12 @@ test('signed checkpoint verifies archive, independent current heads and history;
   const p2=await advancePromotion({base,token,promotion:promo2,expectedPreviousSha256:p.headSha256,expectedCatalogSha256:c2.headSha256});
   const after=bucket.writes,newHeads={...args,expectedCatalogHeadSha256:c2.headSha256,expectedPromotionHeadSha256:p2.headSha256};
   assert.equal((await verifyCheckpointState(newHeads)).checkpointSha256,expectedSha256);assert.equal(bucket.writes,after);
+  // Even a validly hashed and pinned promotion must point into the separately
+  // pinned catalog history, not to a plausible fork of that history.
+  const forkBytes=Buffer.from(JSON.stringify({...catalog2,unrelatedFork:true})),forkSha=sha256(forkBytes);
+  const badPromotion=Buffer.from(JSON.stringify({...promo2,catalogSha256:forkSha})),badSha=sha256(badPromotion),honestFetch=globalThis.fetch;
+  globalThis.fetch=async(url,options)=>String(url).endsWith('/docs/latest.json')?new Response(badPromotion):String(url).endsWith(`/docs/catalog-history/${forkSha}.json`)?new Response(forkBytes):honestFetch(url,options);
+  await assert.rejects(verifyCheckpointState({...newHeads,expectedPromotionHeadSha256:badSha}),/outside pinned catalog history/);globalThis.fetch=honestFetch;
   await assert.rejects(verifyCheckpointState({...args,expectedCatalogHeadSha256:'f'.repeat(64)}),/digest mismatch/);
   await assert.rejects(verifyCheckpointState({...newHeads,expectedPromotionHeadSha256:'e'.repeat(64)}),/digest mismatch/);
   await assert.rejects(verifyCheckpointState({...args,expectedSha256:'d'.repeat(64)}),/digest mismatch/);
