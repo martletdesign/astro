@@ -45,6 +45,7 @@ jobs:
           if node scripts/docs-versions/build-release.mjs; then echo 'Existing snapshot was overwritten' >&2; exit 1; fi
           test "$before" = "$(sha256sum "$DOCS_ARCHIVE_ROOT/$DOCS_VERSION/manifest.json")"
           timeout 90s node scripts/docs-versions/browser-check.mjs "$DOCS_ARCHIVE_ROOT" "$DOCS_DEPLOY_PREFIX" martlet
+          DOCS_FAMILY=martlet node scripts/docs-versions/rehearse-r2.mjs
   history:
     runs-on: ubuntu-latest
     steps:
