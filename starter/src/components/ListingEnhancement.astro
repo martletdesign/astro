@@ -1,0 +1,21 @@
+<script>
+  document.querySelectorAll('[data-listing]').forEach(listing => {
+    const items = [...listing.querySelectorAll('[data-list-item]')];
+    const nav = listing.querySelector('[data-pagination]');
+    if (!nav) return;
+    const previous = nav.querySelector('[data-previous]');
+    const next = nav.querySelector('[data-next]');
+    const status = nav.querySelector('[data-page-status]');
+    let page = 0;
+    const render = () => {
+      items.forEach((item, index) => { item.hidden = index < page * 3 || index >= (page + 1) * 3; });
+      previous.disabled = page === 0;
+      next.disabled = (page + 1) * 3 >= items.length;
+      status.textContent = `Page ${page + 1} of ${Math.ceil(items.length / 3)}`;
+    };
+    previous.addEventListener('click', () => { page--; render(); if (previous.disabled) next.focus(); });
+    next.addEventListener('click', () => { page++; render(); if (next.disabled) previous.focus(); });
+    nav.hidden = false;
+    render();
+  });
+</script>

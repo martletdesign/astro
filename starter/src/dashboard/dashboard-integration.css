@@ -1,0 +1,14 @@
+/* The Jekyll dashboard heading and panel rules were scoped to .example-root.
+   Astro dashboards use .dash-app directly, so apply the same working hierarchy. */
+.dash-app .dash-heading h1 { font-size:clamp(2rem,3.4vw,3rem); line-height:1.15; margin:.5rem 0 1rem; }
+.dash-app .dash-panel h2 { font-size:1.3rem; line-height:1.25; margin:0 0 .75rem; }
+.dash-app p { margin:0 0 1rem; }
+/* Keep working controls and long words inside the available space when text is enlarged. */
+:is(.analytics-app,.dash-app) { overflow-wrap:anywhere; }
+:is(.analytics-app,.dash-app) button { max-inline-size:100%; min-inline-size:0; white-space:normal; overflow-wrap:anywhere; }
+@media(max-width:42rem) {
+  /* Keep a usable working area when the user's root text size is enlarged. */
+  .analytics-app, .dash-app .dash-layout { width:calc(100% - 2 * min(1rem, 16px)); }
+  .analytics-app :is(aside,form,.analytics-chart), .dash-app :is(.dash-sidebar,.dash-toolbar,.dash-panel) { padding-inline:min(1rem, 16px); }
+  :is(.analytics-app,.dash-app) button { padding-inline:min(1rem, 12px); }
+}

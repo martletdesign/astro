@@ -1,0 +1,82 @@
+---
+const {kind, Button, id} = Astro.props;
+const formId = `form:${id}:`;
+const legend = kind.replaceAll('-', ' ').replace(/^./, c=>c.toUpperCase());
+---
+<p id={`${formId}notice`}>Local interface demonstration. Use invented values only. Nothing is sent, saved, subscribed, or authenticated.</p>
+<form data-demo-form={kind} aria-describedby={`${formId}notice`}>
+  <fieldset disabled data-demo-fields><legend>{legend}</legend>
+    {['contact','sign-up'].includes(kind) && <><label for={`${formId}name`}>Name</label><input id={`${formId}name`} name="name" autocomplete="off" required maxlength="120" /></>}
+    {kind !== 'two-factor' && <><label for={`${formId}email`}>Email address</label><input id={`${formId}email`} name="email" type="email" autocomplete="off" required maxlength="254" /></>}
+    {['sign-in','sign-up'].includes(kind) && <><label for={`${formId}password`}>Example password</label><input id={`${formId}password`} name="password" type="password" autocomplete="off" required minlength="8" maxlength="128" aria-describedby={`${formId}password-help`} /><p id={`${formId}password-help`}>Use an invented password of at least eight characters.</p></>}
+    {kind === 'two-factor' && <><label for={`${formId}code`}>Six-digit example code</label><input id={`${formId}code`} name="code" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="off" required aria-describedby={`${formId}code-help`} /><p id={`${formId}code-help`}>Any six digits demonstrate local format validation.</p></>}
+    {kind === 'contact' && <><label for={`${formId}topic`}>Topic</label><select id={`${formId}topic`} name="topic"><option>Research</option><option>Visits</option><option>Corrections</option></select><label for={`${formId}message`}>Message</label><textarea id={`${formId}message`} name="message" required rows="6" maxlength="4000"></textarea></>}
+    {['newsletter','sign-up'].includes(kind) && <label><input type="checkbox" required name="consent" /> I understand this is a local demonstration.</label>}
+    <div class="demo-actions"><Button type="submit">Validate example</Button> <Button type="reset">Clear</Button></div>
+  </fieldset>
+  <p role="status" data-form-status></p>
+</form>
+<p data-form-fallback>This local form is unavailable.</p>
+<noscript><p>JavaScript is needed for local form validation. The demonstration form is disabled to prevent accidental submission.</p></noscript>
+<style>
+fieldset { display:grid; gap:.5rem; min-width:0; }
+fieldset :is(input:not([type=checkbox]),select,textarea) { font-size:1rem; min-width:0; max-width:100%; box-sizing:border-box; }
+.demo-actions { display:flex; gap:.75rem; flex-wrap:wrap; margin-top:1rem; }
+</style>
+<script>
+  document.querySelectorAll('[data-demo-form]').forEach(form => {
+    const status = form.querySelector('[data-form-status]'), fields = form.querySelector('[data-demo-fields]'), fallback = form.nextElementSibling;
+    if (!status || !fields || !fallback?.matches('[data-form-fallback]')) return;
+    const freeText = form.querySelectorAll('[name=name], [name=message]');
+    const validateText = () => freeText.forEach(input => {
+      const label = input.name === 'name' ? 'name' : 'message';
+      input.setCustomValidity(input.value && !input.value.trim() ? `Enter a ${label} with at least one non-whitespace character.` : '');
+    });
+    // Whitespace is a custom rule, so expose its error inline instead of relying
+    // on a browser popup which can obscure a subsequent pointer activation.
+    let suppressNativePopup = false;
+    const originalInvalid = new WeakMap();
+    const clearWhitespace = () => freeText.forEach(input => {
+      if (input.validity.customError) return;
+      const error = form.querySelector(`[data-whitespace-error="${input.name}"]`);
+      if (!error) return;
+      const ids = (input.getAttribute('aria-describedby') || '').split(/\s+/).filter(id => id && id !== error.id);
+      if (ids.length) input.setAttribute('aria-describedby', ids.join(' ')); else input.removeAttribute('aria-describedby');
+      const oldInvalid = originalInvalid.get(input);
+      if (oldInvalid === null) input.removeAttribute('aria-invalid'); else input.setAttribute('aria-invalid', oldInvalid);
+      originalInvalid.delete(input); error.remove();
+    });
+    const showWhitespace = input => {
+      let error = form.querySelector(`[data-whitespace-error="${input.name}"]`);
+      if (!error) {
+        error = document.createElement('span'); error.id = `${input.id}-whitespace-error`;
+        error.dataset.whitespaceError = input.name; error.setAttribute('role', 'alert');
+        originalInvalid.set(input, input.getAttribute('aria-invalid'));
+        input.insertAdjacentElement('afterend', error);
+        input.setAttribute('aria-describedby', [input.getAttribute('aria-describedby'), error.id].filter(Boolean).join(' '));
+      }
+      input.setAttribute('aria-invalid', 'true'); error.textContent = input.validationMessage;
+    };
+    form.addEventListener('submit', event => {
+      event.preventDefault();
+      validateText(); clearWhitespace();
+      const firstInvalid = Array.from(form.elements).find(input => input.willValidate && !input.validity.valid);
+      suppressNativePopup = !!firstInvalid?.validity?.customError;
+      if (suppressNativePopup) showWhitespace(firstInvalid);
+      const valid = form.reportValidity();
+      suppressNativePopup = false;
+      if (!valid) { if (firstInvalid?.validity?.customError) firstInvalid.focus(); return; }
+      status.textContent = 'Example validated locally. Nothing was sent, saved, or authenticated.';
+      form.querySelectorAll('[type=password], [name=code]').forEach(input => { input.value = ''; });
+    });
+    // Explicit reportValidity still emits a non-bubbling invalid event.
+    form.addEventListener('invalid', event => { status.textContent = ''; if (suppressNativePopup) event.preventDefault(); }, true);
+    // A validation message describes the submitted values, not later edits.
+    form.addEventListener('input', () => { validateText(); clearWhitespace(); status.textContent = ''; });
+    form.addEventListener('change', () => { validateText(); clearWhitespace(); status.textContent = ''; });
+    form.addEventListener('reset', () => { freeText.forEach(input => input.setCustomValidity('')); clearWhitespace(); status.textContent = ''; });
+    // Recheck custom errors at submission even if a host changed a value without
+    // dispatching input. reportValidity above still enforces native constraints.
+    form.noValidate = true; fields.disabled = false; fallback.hidden = true;
+  });
+</script>

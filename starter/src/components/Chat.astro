@@ -1,0 +1,42 @@
+---
+const {Button} = Astro.props;
+---
+<div data-conversation>
+<ol data-messages aria-label="Conversation"><li><strong>Mara · Example message</strong><p>Could we review the conditions note before publishing?</p></li><li><strong>Rowan · Example message</strong><p>Yes. Keep the uncertainty visible in the account.</p></li></ol>
+<form data-chat><fieldset disabled data-chat-fields><legend>Add a local message</legend><label>Message<textarea required maxlength="1000" rows="3"></textarea></label><div class="chat-actions"><Button type="submit">Add to this preview</Button> <Button type="button" data-clear-chat>Reset conversation</Button></div></fieldset><p role="status" data-chat-status>Messages remain in page memory. Nothing is delivered.</p></form>
+<p data-chat-fallback>Message composition is unavailable.</p>
+<noscript><p>Message composition requires JavaScript.</p></noscript>
+</div>
+<style>
+fieldset { display:grid; gap:.5rem; min-width:0; }
+label textarea { display:block; margin-top:.5rem; font-weight:400; }
+.chat-actions { display:flex; flex-wrap:wrap; gap:.75rem; }
+</style>
+<script>
+  document.querySelectorAll('[data-conversation]').forEach(conversation => {
+    const chat = conversation.querySelector('[data-chat]');
+    if (!chat) return;
+    const messages = conversation.querySelector('[data-messages]');
+    const input = chat.querySelector('textarea');
+    const status = chat.querySelector('[data-chat-status]');
+    const fields = chat.querySelector('[data-chat-fields]'), reset = chat.querySelector('[data-clear-chat]'), fallback = conversation.querySelector('[data-chat-fallback]');
+    if (!messages || !input || !status || !fields || !reset || !fallback) return;
+    const original = [...messages.children].map(node => node.cloneNode(true));
+    chat.addEventListener('submit', event => {
+      event.preventDefault();
+      if (!input.value.trim()) { input.setCustomValidity('Enter a message before adding it.'); input.reportValidity(); return; }
+      const item = document.createElement('li');
+      const name = document.createElement('strong'); name.textContent = 'You · Local preview';
+      const text = document.createElement('p'); text.textContent = input.value.trim();
+      item.append(name, text); messages.append(item); input.value = '';
+      status.textContent = 'Added to this preview. Not sent to anyone; cleared when you leave or reload.'; input.focus();
+    });
+    input.addEventListener('input', () => { input.setCustomValidity(''); const neutral = 'Messages remain in page memory. Nothing is delivered.'; if (status.textContent !== neutral) status.textContent = neutral; });
+    input.addEventListener('invalid', () => { status.textContent = input.validity.valueMissing || input.validity.customError ? 'Enter a message before adding it.' : 'Check the message and try again.'; });
+    reset.addEventListener('click', () => {
+      messages.replaceChildren(...original.map(node => node.cloneNode(true)));
+      input.value = ''; input.setCustomValidity(''); status.textContent = 'Conversation reset. Nothing was delivered.';
+    });
+    fields.disabled = false; fallback.hidden = true;
+  });
+</script>

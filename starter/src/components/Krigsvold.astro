@@ -1,0 +1,25 @@
+---
+import { Layout, Button } from '@krigsvold/astro';
+import '@krigsvold/core/source-profile.css';
+import './source-shell.css';
+import './krigsvold-shell.css';
+import SourceHeader from './SourceHeader.astro';
+import SourceFooter from './SourceFooter.astro';
+import SourceMasthead from './SourceMasthead.astro';
+import Content from './Content.astro';
+import mark from '../../jekyll/krigsvold/assets/mark.svg?url';
+const {page, href, base} = Astro.props;
+const name = 'Northlight Field Institute';
+const links = [{href:href('/examples/home/'),label:'Home',current:page.id==='home'},{href:href('/examples/about/'),label:'About',current:page.id==='about'},{href:href('/examples/archive/'),label:'Archive',current:page.id==='archive'},{href:href('/examples/'),label:'Examples',current:page.id==='index'}];
+const dashboards = ['analytics','administration','operations'].map(id => ({href:href(`/examples/dashboard-${id}/`),label:id[0].toUpperCase()+id.slice(1)}));
+---
+<Layout title={page.title} description={page.summary} bodyClass="krigsvold-source-profile">
+  <link slot="head" rel="icon" type="image/svg+xml" href={mark} />
+  <script is:inline slot="head" define:vars={{family: 'krigsvold'}}>try { const mode=localStorage.getItem('nightjar-appearance')==='dark'?'dark':'light'; document.documentElement.dataset.appearance=mode;document.documentElement.setAttribute(`data-${family}`,mode); } catch {}</script>
+  <SourceHeader slot="header" name="Krigsvold examples" home={href('/examples/')} links={links} mark={mark} />
+  {!page.dashboard && <SourceMasthead page={page} />}
+  {!page.dashboard && page.id !== 'home' && <nav class="nightjar-breadcrumb" aria-label="Breadcrumb"><a href={href('/examples/home/')}>Home</a><span aria-hidden="true"> / </span>{page.id !== 'index' && <><a href={href('/examples/')}>Examples</a><span aria-hidden="true"> / </span></>}<span aria-current="page">{page.title}</span></nav>}
+  {!page.dashboard && <Content page={page} href={href} base={base} Button={Button} />}
+  <slot />
+  <SourceFooter slot="footer" name={name} groups={[{label:'Explore',links},{label:'Dashboards',links:dashboards}]} />
+</Layout>

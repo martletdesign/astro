@@ -1,0 +1,24 @@
+.nightjar-brand { font-family:var(--martlet-font-display,serif); }
+
+/* Enabling a control must not animate its background while its text color changes immediately. */
+button.martlet-button { transition:none; }
+
+/* Preserve readable paper output when dark screen appearance is selected. */
+@media print {
+ html[data-martlet="dark"] {
+  color-scheme:light;
+  --martlet-bg:#fff; --martlet-panel:#f1f5fb; --martlet-text:#122744; --martlet-muted:#455b76;
+  --martlet-text-strong:#0d2038; --martlet-text-subtle:#455b76; --martlet-link:#154c9e;
+  --martlet-accent:#154c9e; --martlet-line:#cbcfd6; --martlet-green:#286b40;
+  --martlet-danger:#a02e42; --martlet-warning:#805000; --martlet-chart-1:#154c9e; --martlet-chart-2:#286b40;
+  --martlet-source-ink:#222a33; --martlet-source-heading:#0d2038; --martlet-source-support:#f1f5fb;
+ }
+}
+
+/* Source example typography uses Cambo for editorial section labels and cards. */
+.martlet-source-profile .recipe[data-example] h3 { font-size:1.2rem; line-height:1.25; }
+.martlet-source-profile .recipe[data-example] :is(h2,h3) { font-family:var(--martlet-font-serif); font-weight:400; }
+.martlet-source-profile .nightjar-masthead h1 { font-size:clamp(2rem,5.5vw,5rem); line-height:1.08; font-weight:400; }
+
+/* Source cards group related paths with a quiet leading rule. */
+.martlet-source-profile .recipe[data-example] .recipe-list > * { border-block-start:1px solid var(--martlet-line); padding-block:1.5rem; min-width:0; }

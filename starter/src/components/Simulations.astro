@@ -1,0 +1,45 @@
+---
+import {exampleImage} from '../assets.mjs';
+const {kind,id} = Astro.props;
+if(typeof id!=='string'||!/^[a-z][a-z0-9-]*$/.test(id)) throw new Error('Simulation requires a valid unique section ID');
+---
+{kind === 'sensors' ? <>
+  <div data-sensors>
+    <dl><div><dt>Illustrative indoor temperature</dt><dd><output data-temperature>18 °C</output></dd></div><div><dt>Illustrative battery charge</dt><dd>72%</dd></div><div><dt>Data source</dt><dd>Simulation</dd></div></dl>
+    <div class="controls"><label for={`_simulation-${id}-mode`}>Simulated conditions</label><select id={`_simulation-${id}-mode`} disabled><option value="18">Normal day</option><option value="12">Cool morning</option><option value="24">Warm afternoon</option></select><label><input type="checkbox" disabled /> Preview ventilation enabled</label><p role="status" data-sensor-status>No real device is connected. Controls affect this preview only.</p></div>
+  </div>
+  <noscript><p>Changing simulated conditions requires JavaScript.</p></noscript>
+</> : <>
+  <div data-scene data-coast={exampleImage('/assets/examples/coast.svg')} data-station={exampleImage('/assets/examples/station.svg')} data-notebook={exampleImage('/assets/examples/notebook.svg')}>
+    <div class="controls"><label for={`_scene-${id}-view`}>Viewpoint</label><select id={`_scene-${id}-view`} disabled><option value="coast">Coastline</option><option value="station">Field station</option><option value="notebook">Notebook</option></select></div>
+    <figure><img src={exampleImage('/assets/examples/coast.svg')} data-scene-image alt="Illustrated coastline with observation markers." width="960" height="640" /><figcaption data-scene-caption>Coastline · Original vector illustration; fictional geography.</figcaption></figure><p role="status" data-scene-status>Static illustration. No immersive device is connected.</p>
+  </div>
+  <noscript><p>Changing the illustrated viewpoint requires JavaScript.</p></noscript>
+</>}
+<style>
+.controls { display:grid; gap:.5rem; }
+figure { margin-inline:0; }
+figure img { max-width:100%; height:auto; }
+</style>
+<script>
+  document.querySelectorAll('[data-sensors]').forEach(sensors => {
+    const mode=sensors.querySelector('select'); const ventilation=sensors.querySelector('input');
+    const update=() => {
+      sensors.querySelector('[data-temperature]').textContent=`${mode.value} °C`;
+      sensors.querySelector('[data-sensor-status]').textContent=`Simulation updated. Preview ventilation ${ventilation.checked ? 'enabled' : 'disabled'}. No real device is connected.`;
+    };
+    mode.addEventListener('change',update); ventilation.addEventListener('change',update);
+    mode.disabled=false; ventilation.disabled=false;
+  });
+  document.querySelectorAll('[data-scene]').forEach(scene => {
+    const select=scene.querySelector('select'); const image=scene.querySelector('img');
+    const views={coast:'Illustrated coastline with observation markers.',station:'Stylised field station beside water.',notebook:'An open field notebook with observation lines.'};
+    select.addEventListener('change',() => {
+      if (!Object.hasOwn(views,select.value)) return;
+      image.src=scene.dataset[select.value]; image.alt=views[select.value];
+      scene.querySelector('[data-scene-caption]').textContent=`${select.selectedOptions[0].textContent} · Original fictional illustration.`;
+      scene.querySelector('[data-scene-status]').textContent=`Showing ${select.selectedOptions[0].textContent}. No immersive device is connected.`;
+    });
+    select.disabled=false;
+  });
+</script>

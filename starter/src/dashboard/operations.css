@@ -1,0 +1,10 @@
+.dash-app { padding-top:0; margin-block:2rem 4rem; }
+.dash-app .example-table-scroll { max-width:100%; overflow:auto; border:1px solid var(--ex-line); }
+.dash-app table { border-collapse:collapse; width:100%; }
+.dash-app :is(th,td) { text-align:start; border-bottom:1px solid var(--ex-line); min-width:7rem; }
+.dash-app label { display:block; font-weight:700; }
+.dash-app :is(input:not([type=checkbox]),select) { max-width:100%; width:100%; padding:.5rem; font:inherit; color:var(--ex-text); background:var(--ex-bg); border:1px solid var(--ex-muted); }
+.dash-app fieldset { min-width:0; border:0; padding:0; }
+.dash-app button { margin:.5rem .5rem .25rem 0; }
+.dash-app [hidden] { display:none !important; }
+.ops-notice { padding:1rem; border-inline-start:3px solid var(--ex-link); background:var(--ex-panel); }

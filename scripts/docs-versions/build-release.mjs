@@ -3,6 +3,7 @@ import {execFileSync} from 'node:child_process';
 import {tmpdir} from 'node:os';
 import {join,resolve,relative} from 'node:path';
 import {createSnapshot} from './snapshot.mjs';
+import {assertCleanStarter} from './clean-starter.mjs';
 import {parseVersion,sha256,validateCatalog,versionTopicURL} from './contract.mjs';
 
 const env=process.env;
@@ -20,6 +21,7 @@ const sourceCommit=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).tr
 if(env.GITHUB_SHA && env.GITHUB_SHA!==sourceCommit)throw Error('Source commit differs from event');
 if(execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim())throw Error('Documentation source tree must be clean');
 try {await lstat(join(resolve(env.DOCS_ARCHIVE_ROOT),version));throw Error('Snapshot version already exists');}catch(error){if(error.code!=='ENOENT')throw error;}
+await assertCleanStarter(join(root,'starter'));
 const temp=await mkdtemp(join(tmpdir(),'nightjar-astro-docs-'));
 const run=(command,args,cwd)=>execFileSync(command,args,{cwd,stdio:['ignore','pipe','inherit'],encoding:'utf8'});
 async function files(dir){const out=[];for(const e of await readdir(dir,{withFileTypes:true})){const p=join(dir,e.name);if(e.isDirectory())out.push(...await files(p));else out.push(p);}return out;}
@@ -36,9 +38,15 @@ try {
   if(installed?.version!==pin.core.version||installed?.integrity!==pin.core.integrity)throw Error('Installed core version or integrity differs from reviewed pin');
   run('npm',['ls',pin.core.name,'--json'],site);
   const base=`${prefix}/docs/v/${version}/`;
-  await writeFile(join(site,'astro.config.mjs'),`import {defineConfig} from 'astro/config'; export default defineConfig({base:${JSON.stringify(base)}});\n`);
+  process.env.NIGHTJAR_BASE=base;
+  process.env.NIGHTJAR_FAMILY=family;
   run('npm',['run','build'],site);
   const dist=join(site,'dist'),paths=await files(dist);
+  const catalog=JSON.parse(await readFile(join(site,'page-archetypes/content/catalog.json'),'utf8'));
+  if(catalog.pages?.length!==50||new Set(catalog.pages.map(p=>p.id)).size!==50)throw Error('Expected 50 unique canonical examples');
+  for(const page of catalog.pages){if(!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(page.id))throw Error('Invalid canonical example id');await readFile(join(dist,'examples',page.id,'index.html'));}
+  await readFile(join(dist,'examples/scientific-workspace/index.html'));
+  run('python3',[join(root,'scripts/docs-versions/verify-html.py'),dist,'--baseurl',base.replace(/\/$/,'')],root);
   const navigationScript=`const prefix=${JSON.stringify(prefix)},family=${JSON.stringify(family)},active=${JSON.stringify(version)};\n`+
     `const nav=document.querySelector('[data-version-nav]');if(nav)fetch(prefix+'/docs/catalog.json',{credentials:'same-origin'}).then(r=>{if(!r.ok)throw Error();return r.json()}).then(c=>{if(c.family!==family||c.framework!=='astro'||!Array.isArray(c.versions)||c.versions.length>1000||!c.versions.some(v=>v.version===active))return;const topic=nav.dataset.topic,list=nav.querySelector('ul'),frag=document.createDocumentFragment();for(const v of c.versions){if(typeof v.version!=='string'||!/^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?$/.test(v.version)||!Array.isArray(v.topics)||typeof v.supported!=='boolean')return;const use=v.topics.includes(topic)?topic:'';if(use&&!/^[A-Za-z0-9._~/-]+$/.test(use))return;const li=document.createElement('li'),a=document.createElement('a');a.href=prefix+'/docs/v/'+v.version+'/'+use;a.textContent='v'+v.version+(v.version===active?' (current)':'')+(v.version===c.latestStable?' (latest stable)':'')+(v.supported?'':' (unsupported)')+(v.channel==='prerelease'?' (prerelease)':'');if(v.version===active)a.setAttribute('aria-current','page');li.append(a);frag.append(li);}list.replaceChildren(frag)}).catch(()=>{});\n`;
   await writeFile(join(dist,'version-navigation.js'),navigationScript);
