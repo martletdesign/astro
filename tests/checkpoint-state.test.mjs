@@ -56,8 +56,26 @@ test('signed checkpoint verifies archive, independent current heads and history;
   const c2=await advanceCatalog({base,token,catalog:catalog2,expectedPreviousSha256:c.headSha256});
   const promo2={...promo,previousSha256:p.headSha256,catalogSha256:c2.headSha256,version:'2.1.0'};
   const p2=await advancePromotion({base,token,promotion:promo2,expectedPreviousSha256:p.headSha256,expectedCatalogSha256:c2.headSha256});
-  const after=bucket.writes,newHeads={...args,expectedCatalogHeadSha256:c2.headSha256,expectedPromotionHeadSha256:p2.headSha256};
+  let after=bucket.writes,newHeads={...args,expectedCatalogHeadSha256:c2.headSha256,expectedPromotionHeadSha256:p2.headSha256};
   assert.equal((await verifyCheckpointState(newHeads)).checkpointSha256,expectedSha256);assert.equal(bucket.writes,after);
+  // Independently pinned bytes must still satisfy gateway transition rules.
+  // A pin alone cannot turn an impossible rollback into valid history.
+  async function rejectPromotion(value,pattern){
+   const bad=Buffer.from(JSON.stringify(value)),hash=sha256(bad),honest=globalThis.fetch;
+   globalThis.fetch=async(url,options)=>String(url).endsWith('/docs/latest.json')?new Response(bad):honest(url,options);
+   try{await assert.rejects(verifyCheckpointState({...newHeads,expectedPromotionHeadSha256:hash}),pattern);}finally{globalThis.fetch=honest;}
+  }
+  await rejectPromotion({...promo,operation:'rollback',reason:'Invalid bootstrap rollback'},/Initial promotion cannot roll back/);
+  await rejectPromotion({...promo2,operation:'rollback',reason:'short'},/Invalid promotion/);
+  await rejectPromotion({...promo2,operation:'rollback',reason:'Attempted upward rollback'},/Rollback must move to an earlier version/);
+  const catalog3={...catalog2,previousSha256:c2.headSha256,latestStable:'2.0.0',versions:[entry,{...entry2,supported:false}]};
+  const c3=await advanceCatalog({base,token,catalog:catalog3,expectedPreviousSha256:c2.headSha256});
+  const rollback={...promo,previousSha256:p2.headSha256,catalogSha256:c3.headSha256,operation:'rollback',reason:'Withdraw the defective later release'};
+  const p3=await advancePromotion({base,token,promotion:rollback,expectedPreviousSha256:p2.headSha256,expectedCatalogSha256:c3.headSha256});
+  newHeads={...newHeads,expectedCatalogHeadSha256:c3.headSha256,expectedPromotionHeadSha256:p3.headSha256};after=bucket.writes;
+  assert.equal((await verifyCheckpointState(newHeads)).checkpointSha256,expectedSha256);assert.equal(bucket.writes,after);
+  await rejectPromotion({...rollback,operation:'promote',reason:''},/Earlier promotion requires explicit rollback/);
+  await rejectPromotion({...promo2,previousSha256:p3.headSha256},/Promotion catalog history moved backwards/);
   // Even a validly hashed and pinned promotion must point into the separately
   // pinned catalog history, not to a plausible fork of that history.
   const forkBytes=Buffer.from(JSON.stringify({...catalog2,unrelatedFork:true})),forkSha=sha256(forkBytes);
