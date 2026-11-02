@@ -24,7 +24,7 @@ export function checkpointBytes(value,identity){return Buffer.from(JSON.stringif
 function runFile(binary,args,{cwd,maxBuffer=2*1024*1024}={}){try{return execFileSync(binary,args,{cwd,encoding:'utf8',stdio:['ignore','pipe','pipe'],timeout:60000,maxBuffer});}catch{throw Error(`${binary} checkpoint verification failed`);}}
 function originMatches(value,repository){return value.trim()===`https://github.com/${repository}.git`||value.trim()===`https://github.com/${repository}`||value.trim()===`git@github.com:${repository}.git`;}
 function readReleaseAsset({repository,tag,expectedSha256,expectedSize,cwd,run}){
-  let release;try{release=JSON.parse(run('gh',['api',`repos/${repository}/releases/tags/${tag}`],{cwd}));}catch{throw Error('Cannot read immutable release metadata');}
+  let release;try{release=JSON.parse(run('gh',['api',`repos/${repository}/releases/tags/${tag}`,'--hostname','github.com'],{cwd}));}catch{throw Error('Cannot read immutable release metadata');}
   required(release?.immutable===true&&release.draft===false&&release.tag_name===tag&&Array.isArray(release.assets),'Release is not immutable');
   const assets=release.assets.filter(a=>a.name===assetName),asset=assets[0];
   required(assets.length===1&&asset.digest===`sha256:${expectedSha256}`&&Number.isSafeInteger(asset.size)&&asset.size>0&&asset.size<=65536&&(expectedSize===undefined||asset.size===expectedSize),'Release asset metadata mismatch');
@@ -39,7 +39,7 @@ export async function retrieveCheckpoint({family,repository,tag,expectedCommit,e
   required(basename(assetPath||'')===assetName,'Unexpected checkpoint asset name');
   const asset=readReleaseAsset({repository,tag,expectedSha256,cwd,run});
   required(Number.isSafeInteger(asset.id)&&asset.id>0,'Invalid release asset identity');
-  const bytes=Buffer.from(run('gh',['api',`repos/${repository}/releases/assets/${asset.id}`,'--header','Accept: application/octet-stream'],{cwd,maxBuffer:65536}));
+  const bytes=Buffer.from(run('gh',['api',`repos/${repository}/releases/assets/${asset.id}`,'--hostname','github.com','--header','Accept: application/octet-stream'],{cwd,maxBuffer:65536}));
   required(bytes.length===asset.size&&sha256(bytes)===expectedSha256,'Downloaded checkpoint digest or size mismatch');
   const temporary=await mkdtemp(join(tmpdir(),'nightjar-checkpoint-'));
   try{
@@ -63,8 +63,8 @@ export async function verifyCheckpoint({family,repository,tag,expectedCommit,exp
   readReleaseAsset({repository,tag,expectedSha256,expectedSize:bytes.length,cwd,run});
   // gh verifies the signed release attestation and that the local bytes are an
   // attested asset for precisely this GitHub repository and tag.
-  run('gh',['release','verify',tag,'--repo',repository],{cwd});
-  run('gh',['release','verify-asset',tag,assetPath,'--repo',repository],{cwd});
+  run('gh',['release','verify',tag,'--repo',`github.com/${repository}`],{cwd});
+  run('gh',['release','verify-asset',tag,assetPath,'--repo',`github.com/${repository}`],{cwd});
   required(originMatches(run('git',['remote','get-url','origin'],{cwd}),repository),'Unexpected Git origin');
   const ref=`refs/tags/${tag}`,localObject=run('git',['rev-parse',ref],{cwd}).trim(),localCommit=run('git',['rev-parse',`${ref}^{commit}`],{cwd}).trim();
   const remote=run('git',['ls-remote','--refs','origin',ref],{cwd}).trim().split(/\s+/);

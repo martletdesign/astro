@@ -91,7 +91,7 @@ test('retrieves only pinned immutable assets and persists only after complete ve
   commands.push([program,...args]);
   if(program==='gh'&&args[0]==='api'&&args[1].includes('/releases/assets/')){
    assert.equal(args[1],`repos/${repo}/releases/assets/123`);
-   assert.deepEqual(args.slice(2),['--header','Accept: application/octet-stream']);
+   assert.deepEqual(args.slice(2),['--hostname','github.com','--header','Accept: application/octet-stream']);
    assert.equal(options.maxBuffer,65536);
    return changes.download??bytes;
   }
@@ -100,7 +100,7 @@ test('retrieves only pinned immutable assets and persists only after complete ve
   return verifier.run(program,args,options);
  };
  const args={...identity,assetPath:output,expectedSha256:sha,run:apiRun()};
- for(const changes of [{immutable:false},{assets:[]},{assets:[{id:123,name:'documentation-checkpoint.json',digest:`sha256:${sha}`,size:65537}]},{assets:[{id:'../../other',name:'documentation-checkpoint.json',digest:`sha256:${sha}`,size:bytes.length}]},{download:Buffer.from('substituted bytes')},{badSignature:true}]){
+ for(const changes of [{immutable:false},{assets:[]},{assets:[1,2].map(id=>({id,name:'documentation-checkpoint.json',digest:`sha256:${sha}`,size:bytes.length}))},{assets:[{id:123,name:'documentation-checkpoint.json',digest:`sha256:${sha}`,size:65537}]},{assets:[{id:'../../other',name:'documentation-checkpoint.json',digest:`sha256:${sha}`,size:bytes.length}]},{download:Buffer.from('substituted bytes')},{badSignature:true}]){
   await assert.rejects(retrieveCheckpoint({...args,run:apiRun(changes)}));
   await assert.rejects(stat(output),{code:'ENOENT'});
  }
@@ -108,4 +108,6 @@ test('retrieves only pinned immutable assets and persists only after complete ve
  assert.equal((await stat(output)).mode&0o777,0o600);
  await assert.rejects(retrieveCheckpoint(args),{code:'EEXIST'});assert.deepEqual(await readFile(output),bytes);
  assert.ok(commands.every(c=>!['create','upload','edit','publish','delete'].includes(c[2])));
+ assert.ok(commands.filter(c=>c[0]==='gh'&&c[1]==='api').every(c=>c.includes('--hostname')&&c[c.indexOf('--hostname')+1]==='github.com'));
+ assert.ok(commands.filter(c=>c[0]==='gh'&&c[1]==='release').every(c=>c.includes('--repo')&&c[c.indexOf('--repo')+1]===`github.com/${repo}`));
 }));
