@@ -45,7 +45,7 @@ jobs:
           set -euo pipefail
           umask 077
           mkdir "$RUNNER_TEMP/astro-src" "$RUNNER_TEMP/astro-out"
-          git archive HEAD | tar -x -C "$RUNNER_TEMP/astro-src"
+          git archive HEAD | tar --same-permissions -x -C "$RUNNER_TEMP/astro-src"
           node -e 'const fs=require("fs"),p=process.argv[1],v=JSON.parse(fs.readFileSync(p));if(v.private!==true)process.exit(1);v.private=false;fs.writeFileSync(p,JSON.stringify(v,null,2)+"\n")' "$RUNNER_TEMP/astro-src/package.json"
           (cd "$RUNNER_TEMP/astro-src" && npm pack --ignore-scripts --pack-destination "$RUNNER_TEMP/astro-out")
           node scripts/tag-release-cli.mjs inspect "$RUNNER_TEMP/astro-out/martlet-astro-${{ steps.identity.outputs.version }}.tgz"
