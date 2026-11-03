@@ -1,0 +1,24 @@
+name: GitFlow policy
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, edited]
+    branches: [main, develop]
+permissions:
+  contents: read
+jobs:
+  branch-policy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --test scripts/gitflow/policy.test.mjs
+      - name: Check source and target branch
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+          BASE_REPOSITORY: ${{ github.repository }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          node --input-type=module -e 'import {branchAllowed} from "./scripts/gitflow/policy.mjs"; if (!branchAllowed(process.env.BASE_REF,process.env.HEAD_REF,process.env.BASE_REPOSITORY === process.env.HEAD_REPOSITORY)) { console.error("GitFlow source branch is not permitted"); process.exit(1); }'
