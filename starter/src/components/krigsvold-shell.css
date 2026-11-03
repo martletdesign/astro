@@ -1,0 +1,35 @@
+.nightjar-header__inner { border:1px solid #ffffff33; border-radius:.4rem; }
+/* Enabling a control must not animate its background while its text color changes immediately. */
+button.krigsvold-button { transition:none; }
+/* The source example contract uses an outline for actions after the first. */
+.recipe-actions li:not(:first-child) .krigsvold-button, .demo-actions .krigsvold-button[type="reset"] { color:var(--krigsvold-text-strong); background:transparent; border-color:var(--krigsvold-text-strong); }
+.recipe-actions li:not(:first-child) .krigsvold-button:hover, .demo-actions .krigsvold-button[type="reset"]:hover { color:var(--krigsvold-on-accent); background:var(--krigsvold-accent); border-color:var(--krigsvold-accent); }
+/* Source example regions pair a stable section label with the working content. */
+@media(min-width:48.001rem) {
+  .krigsvold-source-profile .recipe[data-example] > section { display:grid; grid-template-columns:minmax(10rem,1fr) minmax(0,3fr); gap:0 clamp(2rem,4vw,4rem); border-top:1px solid var(--krigsvold-line); padding-top:2rem; }
+  .krigsvold-source-profile .recipe[data-example] > section > h2 { grid-column:1; margin-top:0; }
+  .krigsvold-source-profile .recipe[data-example] > section > :not(h2) { grid-column:2; }
+}
+.krigsvold-source-profile .recipe[data-example] .recipe-list { grid-template-columns:repeat(auto-fit,minmax(min(100%,13rem),1fr)); }
+
+/* Preserve readable paper output when dark screen appearance is selected. */
+@media print {
+ html[data-krigsvold="dark"] {
+  color-scheme:light;
+  --krigsvold-bg:#fbfaf7; --krigsvold-panel:#eef8fa; --krigsvold-text:#17202a; --krigsvold-muted:#56616c;
+  --krigsvold-text-strong:#061325; --krigsvold-text-subtle:#56616c; --krigsvold-link:#286a9d;
+  --krigsvold-accent:#286a9d; --krigsvold-line:#d9dee2; --krigsvold-green:#35644e;
+  --krigsvold-danger:#9a3542; --krigsvold-warning:#79571f; --krigsvold-chart-1:#286a9d; --krigsvold-chart-2:#35644e;
+  --krigsvold-source-ink:#17202a; --krigsvold-source-heading:#061325; --krigsvold-source-support:#eef8fa;
+ }}
+
+/* Source example regions use sans labels/cards beneath the slab display. */
+.krigsvold-source-profile .recipe[data-example] h3 { font-size:1.2rem; line-height:1.25; }
+.krigsvold-source-profile .recipe[data-example] :is(h2,h3) { font-family:var(--krigsvold-font-sans); }
+.krigsvold-source-profile .recipe[data-example] h2 { font-weight:600; }
+.krigsvold-source-profile .recipe[data-example] h3 { font-weight:700; }
+.krigsvold-source-profile .nightjar-masthead h1 { font-size:clamp(2.8rem,6vw,5.5rem); line-height:1; letter-spacing:-.045em; font-weight:600; }
+@media(max-width:575.98px) { .krigsvold-source-profile .nightjar-masthead h1 { font-size:clamp(2rem,9vw,2.8rem); overflow-wrap:anywhere; } }
+
+/* Source cards group related paths with a quiet leading rule. */
+.krigsvold-source-profile .recipe[data-example] .recipe-list > * { border-block-start:2px solid var(--krigsvold-line); padding-block:1.5rem; min-width:0; }

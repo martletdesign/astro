@@ -1,0 +1,10 @@
+---
+import {formatCatalogDate} from '../../page-archetypes/lib/catalog-date.mjs';
+const {page} = Astro.props;
+const date = page.date && formatCatalogDate(page.date,'long');
+---
+<header class="nightjar-masthead"><div class="nightjar-masthead__inner">
+  <p class="nightjar-eyebrow">{page.category} · Fictional demonstration</p>
+  <h1>{page.title}</h1><p>{page.summary}</p>
+  {page.date && <p>{date ? <time datetime={page.date}>{date}</time> : <span>Invalid date: {page.date}</span>}{page.author && <> · {page.author}</>}</p>}
+</div></header>

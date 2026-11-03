@@ -81,3 +81,12 @@ dialog.addEventListener('close', () => {
   returnTarget?.focus();
 });
 window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = ''; } });
+
+// Only enable the local demonstration after all handlers are installed. A failed
+// or blocked script must never submit form values to the hosting server.
+form.noValidate = true;
+for (const fieldset of form.querySelectorAll('fieldset')) fieldset.disabled = false;
+submit.disabled = false;
+reset.disabled = false;
+document.querySelector('#default-button').disabled = false;
+document.querySelector('#form-fallback').hidden = true;

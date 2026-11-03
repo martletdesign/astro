@@ -1,0 +1,33 @@
+---
+const {name, home, links, mark} = Astro.props;
+---
+<header class="nightjar-header" data-source-nav>
+  <div class="nightjar-header__inner">
+    <a class="nightjar-brand" href={home}><img src={mark} width="40" height="40" alt="" /><span>{name}</span></a>
+    <button class="nightjar-menu" type="button" aria-expanded="false" aria-controls="source-navigation">Menu</button>
+    <nav id="source-navigation" aria-label="Primary navigation">
+      <ul>{links.map(link => <li><a href={link.href} aria-current={link.current ? 'page' : undefined}>{link.label}</a></li>)}</ul>
+      <button class="nightjar-appearance" type="button" data-appearance-toggle aria-pressed="false" disabled>Dark mode</button>
+    </nav>
+  </div>
+</header>
+<script>
+  const header = document.querySelector('[data-source-nav]');
+  if (header instanceof HTMLElement) {
+    const menu = header.querySelector('.nightjar-menu');
+    const nav = header.querySelector('#source-navigation');
+    const toggle = header.querySelector('[data-appearance-toggle]');
+    const media = matchMedia('(max-width: 68rem)');
+    if (menu instanceof HTMLButtonElement && nav instanceof HTMLElement && toggle instanceof HTMLButtonElement) {
+      const updateMenu = () => { if (!media.matches) { nav.hidden = false; menu.setAttribute('aria-expanded', 'false'); } else nav.hidden = menu.getAttribute('aria-expanded') !== 'true'; };
+      const updateAppearance = () => { const dark = document.documentElement.dataset.appearance === 'dark'; toggle.textContent = dark ? 'Light mode' : 'Dark mode'; toggle.setAttribute('aria-pressed', String(dark)); };
+      header.dataset.navigationReady = 'true';
+      toggle.disabled = false;
+      menu.addEventListener('click', () => { menu.setAttribute('aria-expanded', String(menu.getAttribute('aria-expanded') !== 'true')); updateMenu(); });
+      header.addEventListener('keydown', event => { if (event.key === 'Escape' && media.matches && menu.getAttribute('aria-expanded') === 'true') { menu.setAttribute('aria-expanded', 'false'); updateMenu(); menu.focus(); } });
+      media.addEventListener('change', updateMenu);
+      toggle.addEventListener('click', () => { const mode = document.documentElement.dataset.appearance === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.appearance = mode; const family = document.documentElement.hasAttribute('data-martlet') ? 'martlet' : 'krigsvold'; document.documentElement.setAttribute(`data-${family}`, mode); try { localStorage.setItem('nightjar-appearance', mode); } catch {} updateAppearance(); });
+      updateAppearance(); updateMenu();
+    }
+  }
+</script>

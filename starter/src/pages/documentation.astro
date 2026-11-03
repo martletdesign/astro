@@ -1,10 +1,11 @@
 ---
 import { DocumentationLayout, SiteHeader, SiteFooter, Stack } from '@martlet/astro';
+import { localPath } from '../paths';
 ---
 <DocumentationLayout title="A guide to your project" summary="Documentation with a reading column and a separate navigation region." sidebarLabel="Guide contents">
-  <SiteHeader slot="header" name="Your website" links={[{href:'/',label:'Home'},{href:'/article/',label:'Article'}]} />
+  <SiteHeader slot="header" home={localPath('/')} name="Your website" links={[{href:localPath('/'),label:'Home'},{href:localPath('/article/'),label:'Article'}]} />
   <nav slot="navigation" aria-label="On this page"><Stack as="ul" space="small"><li><a href="#install">Installation</a></li><li><a href="#compose">Composition</a></li><li><a href="#adapt">Adaptation</a></li></Stack></nav>
-  <h2 id="install">Installation</h2><pre><code>npm install @martlet/theme @martlet/astro</code></pre>
+  <h2 id="install">Installation</h2><pre><code>npm install ./PATH-TO-martlet-core.tgz ./PATH-TO-martlet-astro.tgz astro</code></pre>
   <h2 id="compose">Composition</h2><p>The navigation comes first in source order. At narrower widths it appears above the article; it does not become a hidden menu.</p>
   <h2 id="adapt">Adaptation</h2><p>Use class hooks and namespaced layout variables for deliberate changes. Content, routes, identity, and application behavior remain yours.</p>
   <SiteFooter slot="footer"><p>Your footer content.</p></SiteFooter>

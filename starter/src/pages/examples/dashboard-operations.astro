@@ -1,0 +1,10 @@
+---
+import catalog from '../../../page-archetypes/content/catalog.json';
+import Shell from '@nightjar/shell';
+import Operations from '../../dashboard/Operations.astro';
+const record=catalog.pages.find(page=>page.id==='dashboard-operations');
+const page={...record,sections:[]};
+const base=import.meta.env.BASE_URL;
+const href=url=>url.startsWith('/')&&!url.startsWith('//')?`${base.replace(/\/$/,'')}${url}`:url;
+---
+<Shell page={page} href={href} base={base}><Operations href={href} page={record} /></Shell>

@@ -1,15 +1,16 @@
 ---
 import { LandingLayout, SiteHeader, SiteFooter, Section, Grid, Stack, Card, Button, Split, SectionHeading } from '@martlet/astro';
-const links=[{href:'/',label:'Home',current:true},{href:'/article/',label:'Article'},{href:'/documentation/',label:'Documentation'},{href:'/layouts/',label:'Layout lab'}];
+const links=[{href:localPath('/'),label:'Home',current:true},{href:localPath('/article/'),label:'Article'},{href:localPath('/documentation/'),label:'Documentation'},{href:localPath('/layouts/'),label:'Layout lab'},{href:localPath('/examples/'),label:'Examples'}];
+import { localPath } from '../paths';
 ---
 <LandingLayout title="Your work, clearly presented." summary="A neutral starting point for a publication, organization, or personal project." eyebrow="A place to begin">
-  <SiteHeader slot="header" name="Your website" links={links} />
+  <SiteHeader slot="header" home={localPath('/')} name="Your website" links={links} />
   <Section aria-labelledby="examples"><Stack><SectionHeading title="Choose a composition" id="examples" /><Grid columns={3}>
-    <Card><h3>An article</h3><p>Readable prose with optional supporting material.</p><Button href="/article/">Read the article</Button></Card>
-    <Card><h3>Documentation</h3><p>A guide with navigation before its reading column.</p><Button href="/documentation/">Open the guide</Button></Card>
-    <Card><h3>Structural layouts</h3><p>Responsive arrangements that work within their available space.</p><Button href="/layouts/">Explore layouts</Button></Card>
+    <Card><h3>An article</h3><p>Readable prose with optional supporting material.</p><Button href={localPath('/article/')}>Read the article</Button></Card>
+    <Card><h3>Documentation</h3><p>A guide with navigation before its reading column.</p><Button href={localPath('/documentation/')}>Open the guide</Button></Card>
+    <Card><h3>Structural layouts</h3><p>Responsive arrangements that work within their available space.</p><Button href={localPath('/layouts/')}>Explore layouts</Button></Card>
   </Grid></Stack></Section>
   <Section mode="dark" aria-labelledby="appearance"><Split><div><h2 id="appearance">Dark appearance</h2><p>Both modes can coexist. Font roles and structural defaults come from the same core.</p></div><Card slot="secondary"><h3>Native controls</h3><label for="example-name">Name</label><input id="example-name" name="name" autocomplete="name" /><Button disabled>Disabled example</Button></Card></Split></Section>
   <SiteFooter slot="footer" links={links}><p>Replace this example with your own words and identity.</p></SiteFooter>
-  <Section><h2>Native form pattern</h2><p><Button href="/form/">Try registration, recovery and reset.</Button></p></Section>
+  <Section><h2>Native form pattern</h2><p><Button href={localPath('/form/')}>Try registration, recovery and reset.</Button></p></Section>
 </LandingLayout>

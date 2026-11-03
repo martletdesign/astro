@@ -1,0 +1,10 @@
+---
+import Button from '@nightjar/button';
+const {href,current} = Astro.props;
+const entries=[{id:'analytics',label:'Analytics'},{id:'administration',label:'Administration'},{id:'operations',label:'Operations'}];
+---
+<aside class="dash-sidebar" aria-label="Dashboard workspace">
+  <p>Northlight · Workspace</p>
+  <Button class="dash-nav-toggle" type="button" aria-controls="dashboard-nav" aria-expanded="false" hidden>Dashboard navigation</Button>
+  <nav id="dashboard-nav" aria-label="Dashboard navigation"><ul>{entries.map(entry=><li>{entry.available===false ? <span>{entry.label} (not yet available here)</span> : <a href={href(`/examples/dashboard-${entry.id}/`)} aria-current={current===entry.id?'page':undefined}>{entry.label}</a>}</li>)}</ul><p>One dataset. Two design languages.</p><a href={href('/examples/')}>All page examples</a></nav>
+</aside>

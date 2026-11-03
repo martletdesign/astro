@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.0 — core migration candidate
+
+- Prepare the independent core peer and versioned documentation archive; publication remains disabled pending immutable storage verification.
+
 ## 1.2.2 — adoption repair preview
 
 - Honor native button type without duplicate attributes. Add a complete simulated form starter and rendered regression assertions; document exact starter retrieval. Pair with core ^2.2.2.
