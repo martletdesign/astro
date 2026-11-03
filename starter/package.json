@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@martlet/astro": "^2.0.0",
-    "@martlet/core": "^2.2.2",
+    "@martlet/core": "^2.2.3",
     "astro": "^7.3.2",
     "markdown-it": "14.3.3",
     "markdown-it-footnote": "4.0.0",

@@ -4,12 +4,16 @@ on:
   workflow_call:
 permissions:
   contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   archive:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
       fail-fast: false
+      max-parallel: 2
       matrix:
         browser: [chromium, firefox, webkit]
         prefix: ['', '/preview']
@@ -48,6 +52,7 @@ jobs:
           DOCS_FAMILY=martlet node scripts/docs-versions/rehearse-r2.mjs
   history:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:

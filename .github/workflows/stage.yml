@@ -1,0 +1,70 @@
+name: Reviewed Astro staged publication
+on:
+  workflow_dispatch:
+    inputs:
+      approved_sha:
+        description: Exact verified main commit
+        required: true
+      artifact_sha256:
+        description: Independently reviewed publishable archive SHA-256
+        required: true
+      distribution_tag:
+        description: npm distribution tag
+        type: choice
+        options: [next, latest]
+        default: next
+permissions:
+  contents: read
+concurrency:
+  group: astro-staged-publication-${{ github.repository }}
+  cancel-in-progress: false
+jobs:
+  stage:
+    # Coordinator activates after exact npm trusted-publisher identity verification.
+    if: ${{ false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: astro-production-release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24.19.0'
+      - run: npm install --global npm@11.15.0 --ignore-scripts
+      - name: Verify event source and reviewed production revision
+        env:
+          APPROVED_SHA: ${{ inputs.approved_sha }}
+        run: |
+          set -euo pipefail
+          [[ "$APPROVED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$GITHUB_REF" = refs/heads/main
+          test "$GITHUB_SHA" = "$APPROVED_SHA"
+          test "$(git rev-parse HEAD)" = "$APPROVED_SHA"
+          git fetch origin main
+          test "$(git rev-parse origin/main)" = "$APPROVED_SHA"
+      - run: npm ci --ignore-scripts --legacy-peer-deps --no-audit --no-fund && npm test
+      - name: Export the exact public archive and verify its identity and registry absence
+        env:
+          EXPECTED_SHA256: ${{ inputs.artifact_sha256 }}
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          mkdir "$RUNNER_TEMP/astro-src" "$RUNNER_TEMP/astro-out"
+          git archive HEAD | tar -x -C "$RUNNER_TEMP/astro-src"
+          node -e 'const fs=require("fs"),p=process.argv[1],v=JSON.parse(fs.readFileSync(p));if(v.name!=="@martlet/astro"||v.version!=="2.0.0"||v.private!==true)process.exit(1);v.private=false;fs.writeFileSync(p,JSON.stringify(v,null,2)+"\n")' "$RUNNER_TEMP/astro-src/package.json"
+          (cd "$RUNNER_TEMP/astro-src" && npm pack --ignore-scripts --pack-destination "$RUNNER_TEMP/astro-out")
+          printf '%s  %s\n' "$EXPECTED_SHA256" "$RUNNER_TEMP/astro-out/martlet-astro-2.0.0.tgz" | sha256sum --check
+          node --input-type=module -e 'const r=await fetch("https://registry.npmjs.org/@martlet%2fastro");if(!r.ok)throw Error("Registry metadata unavailable");const p=await r.json();if(p.versions?.["2.0.0"])throw Error("Version already exists; inspect and recover rather than republish")'
+      - name: Stage reviewed bytes for separately authenticated npm approval
+        env:
+          NPM_TAG: ${{ inputs.distribution_tag }}
+        run: |
+          set -euo pipefail
+          [[ "$NPM_TAG" = next || "$NPM_TAG" = latest ]]
+          npm stage publish "$RUNNER_TEMP/astro-out/martlet-astro-2.0.0.tgz" --access public --tag "$NPM_TAG" --provenance

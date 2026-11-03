@@ -2,6 +2,9 @@ name: R2 archive gateway rehearsal
 on: [pull_request]
 permissions:
   contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   local-runtime:
     runs-on: ubuntu-latest

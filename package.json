@@ -40,7 +40,7 @@
   ],
   "peerDependencies": {
     "astro": "^5.14.0 || ^6.0.0 || ^7.0.0",
-    "@martlet/core": "^2.2.2"
+    "@martlet/core": "^2.2.3"
   },
   "scripts": {
     "test": "node --test tests/*.test.mjs",

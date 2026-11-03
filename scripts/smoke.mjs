@@ -5,20 +5,21 @@ import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 const root=fileURLToPath(new URL('../',import.meta.url));
-if(!process.env.MARTLET_CORE_SOURCE)throw new Error('Set MARTLET_CORE_SOURCE to a built martletdesign/core checkout.');
-const core=resolve(process.env.MARTLET_CORE_SOURCE);
+const core=process.env.MARTLET_CORE_SOURCE?resolve(process.env.MARTLET_CORE_SOURCE):null;
+const pin=JSON.parse(await readFile(join(root,'docs-release-lock.json'),'utf8'));
 const temp=await mkdtemp(join(tmpdir(),'martlet-packed-'));
 try {
   const pack=cwd=>JSON.parse(execFileSync('npm',['pack','--ignore-scripts','--json','--pack-destination',temp],{cwd,encoding:'utf8',stdio:['ignore','pipe','inherit']}))[0].filename;
-  const coreArchive=pack(core),astroArchive=pack(root);
+  const coreArchive=core?pack(core):null,astroArchive=pack(root);
   const site=join(temp,'site');await cp(join(root,'starter'),site,{recursive:true});await mkdir(join(site,'vendor'));
-  for(const archive of [coreArchive,astroArchive])await cp(join(temp,archive),join(site,'vendor',archive));
+  for(const archive of [coreArchive,astroArchive].filter(Boolean))await cp(join(temp,archive),join(site,'vendor',archive));
   const pkg=JSON.parse(await readFile(join(site,'package.json'),'utf8'));
-  pkg.dependencies['@martlet/core']='file:vendor/'+coreArchive;
+  pkg.dependencies['@martlet/core']=core?'file:vendor/'+coreArchive:pin.core.version;
   pkg.dependencies['@martlet/astro']='file:vendor/'+astroArchive;
   if(process.env.MARTLET_ASTRO_VERSION)pkg.dependencies.astro=process.env.MARTLET_ASTRO_VERSION;
   await writeFile(join(site,'package.json'),JSON.stringify(pkg,null,2)+'\n');
   execFileSync('npm',['install','--ignore-scripts','--no-audit','--no-fund'],{cwd:site,stdio:'inherit',timeout:180000});
+  if(!core){const lock=JSON.parse(await readFile(join(site,'package-lock.json'),'utf8')),installed=lock.packages?.[`node_modules/${pin.core.name}`];assert.equal(installed?.version,pin.core.version);assert.equal(installed?.integrity,pin.core.integrity);}
   execFileSync('npm',['run','build'],{cwd:site,stdio:'inherit',timeout:180000,env:{...process.env,NIGHTJAR_FAMILY:'martlet',NIGHTJAR_BASE:'/'}});
   const html=await readFile(join(site,'dist/index.html'),'utf8');
   assert.match(html,/data-martlet="light"/);assert.match(html,/data-martlet="dark"/);

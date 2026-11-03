@@ -15,21 +15,15 @@ jobs:
     timeout-minutes: 12
     strategy:
       fail-fast: false
+      max-parallel: 2
       matrix:
         astro: ['5.18.2', '7.3.2']
         browser: [chromium, firefox, webkit]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/checkout@v4
-        with:
-          repository: martletdesign/core
-          ref: 4bc45ff0bd1ee2e93ee61917b023f7b45686895f
-          path: .core
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - run: npm ci --ignore-scripts && npm run build && npm test
-        working-directory: .core
       - run: npm ci --ignore-scripts --legacy-peer-deps --no-audit --no-fund
       - run: npm test
       - name: Use the Ubuntu archive for browser dependencies
@@ -40,7 +34,6 @@ jobs:
       - run: npx playwright install --with-deps ${{ matrix.browser }}
       - run: node scripts/smoke.mjs
         env:
-          MARTLET_CORE_SOURCE: .core
           MARTLET_ASTRO_VERSION: ${{ matrix.astro }}
           MARTLET_BROWSER: 1
           DESIGN_BROWSER: ${{ matrix.browser }}
