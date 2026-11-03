@@ -55,8 +55,10 @@ try {
   const guide=await readFile(join(site,'dist/documentation/index.html'),'utf8');
   assert.ok(guide.indexOf('martlet-sidebar__aside')<guide.indexOf('martlet-sidebar__main'));
   if(process.env.MARTLET_BROWSER === '1') execFileSync(process.execPath,[join(root,'scripts/browser.mjs'),join(site,'dist')],{cwd:root,stdio:'inherit',timeout:210000});
+  if(process.env.MARTLET_BROWSER === '1') execFileSync(process.execPath,[join(root,'scripts/dashboard-resize-check.mjs'),join(site,'dist'),'/'],{cwd:root,stdio:'inherit',timeout:70000});
   // A host may install this starter beneath a prefix; test its emitted internal URLs.
   execFileSync('npm',['run','build'],{cwd:site,stdio:'inherit',timeout:180000,env:{...process.env,NIGHTJAR_FAMILY:'martlet',NIGHTJAR_BASE:'/preview/'}});
   execFileSync(process.execPath,[join(root,'scripts/subpath-check.mjs'),join(site,'dist')],{cwd:root,stdio:'inherit',timeout:30000});
+  if(process.env.MARTLET_BROWSER === '1') execFileSync(process.execPath,[join(root,'scripts/dashboard-resize-check.mjs'),join(site,'dist'),'/preview/'],{cwd:root,stdio:'inherit',timeout:70000});
   console.log('Packed starter build passed: both modes, all font roles, local font assets, and native button behavior.');
 } finally { if (!process.env.MARTLET_KEEP_FIXTURE) await rm(temp,{recursive:true,force:true}); }

@@ -41,12 +41,22 @@ export function chart(root,id,rows,{label='Count',bars=false,previous=false,thre
   const options={label,bars,previous,threshold};
   let state=chartStates.get(mount);
   if(!state){
-    state={id,rows,options,width:0};
+    state={id,rows,options,width:0,frame:0};
     chartStates.set(mount,state);
     if(typeof ResizeObserver!=='undefined'){
-      new ResizeObserver(entries=>{
-        const width=entries[0].contentRect.width;
-        if(width>0&&Math.abs(width-state.width)>=1){state.width=width;drawChart(mount,state.id,state.rows,state.options);}
+      new ResizeObserver(()=>{
+        const width=mount.clientWidth;
+        if(width<=0||Math.abs(width-state.width)<1)return;
+        state.width=width;
+        // Drawing changes the observed mount's height. Defer that mutation until
+        // after ResizeObserver delivery and coalesce repeated size notifications.
+        if(state.frame)return;
+        state.frame=requestAnimationFrame(()=>{
+          state.frame=0;
+          if(!mount.isConnected)return;
+          state.width=mount.clientWidth;
+          drawChart(mount,state.id,state.rows,state.options);
+        });
       }).observe(mount);
     }
   }
