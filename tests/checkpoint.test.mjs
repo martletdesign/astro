@@ -5,7 +5,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {sha256} from '../scripts/docs-versions/contract.mjs';
-import {checkpointBytes,verifyCheckpoint,verifyCheckpointChain} from '../infra/docs-archive/checkpoint.mjs';
+import {checkpointBytes,verifyCheckpoint,verifyCheckpointChain,retrieveCheckpoint} from '../infra/docs-archive/checkpoint.mjs';
 const family=JSON.parse(await readFile(new URL('../docs-release-lock.json',import.meta.url),'utf8')).family,repo=`${family}design/astro`,tag='v2.0.0',commit='a'.repeat(40),object='b'.repeat(40);
 const value={schemaVersion:1,family,framework:'astro',version:'2.0.0',source:{repository:repo,tag,commit},manifestSha256:'1'.repeat(64),catalogSha256:'2'.repeat(64),promotionSha256:'3'.repeat(64),previous:null};
 const identity={family,repository:repo,tag,expectedCommit:commit};
@@ -85,3 +85,33 @@ test('two signed checkpoints retain their pinned lineage and reject a substitute
   await assert.rejects(verifyCheckpointChain({family,repository:repo,entries:[entries[0],{...entries[1],expectedSha256:'f'.repeat(64)}],expectedHeadSha256:newSha,anchorSha256:oldSha,run}),/discontinuity/);
  }finally{await rm(dir,{recursive:true,force:true});}
 });
+
+
+test('retrieves only pinned immutable assets and persists only after complete verification',async()=>fixture(async({bytes,sha,dir})=>{
+ const {mkdir,stat}=await import('node:fs/promises');
+ const outputDir=join(dir,'download');await mkdir(outputDir);const output=join(outputDir,'documentation-checkpoint.json');
+ const verifier=fake({bytes,sha}),commands=[];
+ const apiRun=(changes={})=>(program,args,options)=>{
+  commands.push([program,...args]);
+  if(program==='gh'&&args[0]==='api'&&args[1].includes('/releases/assets/')){
+   assert.equal(args[1],`repos/${repo}/releases/assets/123`);
+   assert.deepEqual(args.slice(2),['--hostname','github.com','--header','Accept: application/octet-stream']);
+   assert.equal(options.maxBuffer,65536);
+   return changes.download??bytes;
+  }
+  if(program==='gh'&&args[0]==='api')return JSON.stringify({immutable:changes.immutable??true,draft:false,tag_name:tag,assets:changes.assets??[{id:123,name:'documentation-checkpoint.json',digest:`sha256:${sha}`,size:bytes.length}]});
+  if(changes.badSignature&&program==='gh'&&args[0]==='release')throw Error('invalid attestation');
+  return verifier.run(program,args,options);
+ };
+ const args={...identity,assetPath:output,expectedSha256:sha,run:apiRun()};
+ for(const changes of [{immutable:false},{assets:[]},{assets:[1,2].map(id=>({id,name:'documentation-checkpoint.json',digest:`sha256:${sha}`,size:bytes.length}))},{assets:[{id:123,name:'documentation-checkpoint.json',digest:`sha256:${sha}`,size:65537}]},{assets:[{id:'../../other',name:'documentation-checkpoint.json',digest:`sha256:${sha}`,size:bytes.length}]},{download:Buffer.from('substituted bytes')},{badSignature:true}]){
+  await assert.rejects(retrieveCheckpoint({...args,run:apiRun(changes)}));
+  await assert.rejects(stat(output),{code:'ENOENT'});
+ }
+ assert.equal((await retrieveCheckpoint(args)).sha256,sha);assert.deepEqual(await readFile(output),bytes);
+ assert.equal((await stat(output)).mode&0o777,0o600);
+ await assert.rejects(retrieveCheckpoint(args),{code:'EEXIST'});assert.deepEqual(await readFile(output),bytes);
+ assert.ok(commands.every(c=>!['create','upload','edit','publish','delete'].includes(c[2])));
+ assert.ok(commands.filter(c=>c[0]==='gh'&&c[1]==='api').every(c=>c.includes('--hostname')&&c[c.indexOf('--hostname')+1]==='github.com'));
+ assert.ok(commands.filter(c=>c[0]==='gh'&&c[1]==='release').every(c=>c.includes('--repo')&&c[c.indexOf('--repo')+1]===`github.com/${repo}`));
+}));

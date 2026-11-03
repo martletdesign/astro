@@ -14,7 +14,7 @@ async function bytesAt(url,expected,maxBytes=2*1024*1024){
 }
 function promotion(bytes,family){
  let p;try{p=JSON.parse(bytes.toString('utf8'));}catch{throw Error('Invalid promotion JSON');}
- need(p?.schemaVersion===1&&p.family===family&&p.framework==='astro'&&['promote','rollback'].includes(p.operation)&&digest.test(p.catalogSha256||'')&&(p.previousSha256===null||digest.test(p.previousSha256||'')),'Invalid promotion identity');
+ need(p?.schemaVersion===1&&p.family===family&&p.framework==='astro'&&['promote','rollback'].includes(p.operation)&&digest.test(p.catalogSha256||'')&&(p.previousSha256===null||digest.test(p.previousSha256||''))&&typeof p.reason==='string'&&p.reason.length<=500&&(p.operation!=='rollback'||p.reason.trim().length>=10),'Invalid promotion identity');
  const ver=parseVersion(p.version);need(ver.channel==='stable','Promotion must identify a stable version');return p;
 }
 export async function verifyCheckpointState({base,expectedCatalogHeadSha256,expectedPromotionHeadSha256,...checkpointArgs}){
@@ -50,19 +50,31 @@ export async function verifyCheckpointState({base,expectedCatalogHeadSha256,expe
   return {checkpointSha256:trusted.sha256,manifestSha256:cp.manifestSha256,catalogHeadSha256:expectedCatalogHeadSha256,promotionHeadSha256:null,files:archiveManifest.files.length};
  }
  let current=promotion(await bytesAt(`${url}/docs/latest.json`,expectedPromotionHeadSha256),cp.family),hash=expectedPromotionHeadSha256;
- const seen=new Set();
+ const seen=new Set();let later=null,checkpointFound=false;
+ const compare=(a,b)=>{const x=a.split('.').map(BigInt),y=b.split('.').map(BigInt);for(let i=0;i<3;i++)if(x[i]!==y[i])return x[i]>y[i]?1:-1;return 0;};
  for(let count=0;count<1000;count++){
   need(!seen.has(hash),'Promotion cycle');seen.add(hash);
   const associated=validateCatalog(JSON.parse((await bytesAt(`${url}/docs/catalog-history/${current.catalogSha256}.json`,current.catalogSha256)).toString('utf8')));
   need(catalogsSeen.has(current.catalogSha256),'Promotion catalog is outside pinned catalog history');
   need(associated.family===cp.family&&associated.framework===cp.framework&&associated.latestStable===current.version&&associated.versions.some(v=>v.version===current.version&&v.channel==='stable'&&v.supported),'Promotion is not backed by its catalog');
+  if(later){
+   need(catalogsSeen.get(current.catalogSha256)>=catalogsSeen.get(later.catalogSha256),'Promotion catalog history moved backwards');
+   const direction=compare(later.version,current.version);
+   if(later.operation==='rollback')need(direction<0,'Rollback must move to an earlier version');
+   else need(direction>=0,'Earlier promotion requires explicit rollback');
+  }
   if(cp.promotionSha256===null)need(catalogsSeen.get(current.catalogSha256)<catalogsSeen.get(cp.catalogSha256),'Promotion predates prerelease checkpoint');
   if(hash===cp.promotionSha256){
    if(prerelease)need(current.version===checkpointCatalog.latestStable&&catalogsSeen.get(current.catalogSha256)>=catalogsSeen.get(cp.catalogSha256),'Prerelease changed stable promotion');
    else need(current.catalogSha256===cp.catalogSha256&&current.version===cp.version,'Checkpoint promotion mismatch');
+   checkpointFound=true;
+  }
+  if(current.previousSha256===null){
+   need(current.operation==='promote','Initial promotion cannot roll back');
+   need(checkpointFound||cp.promotionSha256===null,'Promotion history does not contain checkpoint');
    return {checkpointSha256:trusted.sha256,manifestSha256:cp.manifestSha256,catalogHeadSha256:expectedCatalogHeadSha256,promotionHeadSha256:expectedPromotionHeadSha256,files:archiveManifest.files.length};
   }
-  if(current.previousSha256===null&&cp.promotionSha256===null)return {checkpointSha256:trusted.sha256,manifestSha256:cp.manifestSha256,catalogHeadSha256:expectedCatalogHeadSha256,promotionHeadSha256:expectedPromotionHeadSha256,files:archiveManifest.files.length};
+  later=current;
   need(digest.test(current.previousSha256||''),'Promotion history does not contain checkpoint');hash=current.previousSha256;
   current=promotion(await bytesAt(`${url}/docs/promotion-history/${hash}.json`,hash),cp.family);
  }
