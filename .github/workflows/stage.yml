@@ -20,8 +20,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   stage:
-    # Coordinator activates after exact npm trusted-publisher identity verification.
-    if: ${{ false }}
+    # Manual exact-head staging; npm separately enforces trusted-publisher identity.
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: astro-production-release
