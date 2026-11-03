@@ -1,19 +1,20 @@
 ---
 import { Layout, SiteHeader, SiteFooter, Section, SectionHeading, Stack, Cluster, Grid, Sidebar, Split, Card } from '@martlet/astro';
 const letters='abcdefghijklmnopqrstuvwxyz'.repeat(12);
+import { localPath } from '../paths';
 ---
 <Layout title="Layout lab">
-  <SiteHeader slot="header" name="Your website" links={[{href:'/',label:'Home'},{href:'/article/',label:'Article'},{href:'/documentation/',label:'Documentation'}]} />
+  <SiteHeader slot="header" home={localPath('/')} name="Your website" links={[{href:localPath('/'),label:'Home'},{href:localPath('/article/'),label:'Article'},{href:localPath('/documentation/'),label:'Documentation'}]} />
   <Section><h1>Layout lab</h1><p>Resize this page or enlarge its text. The structural classes respond to their containing regions.</p></Section>
   {['light','dark'].map(mode=><Section mode={mode} class="layout-lab" aria-labelledby={`lab-${mode}`}><Stack space="large">
     <SectionHeading title={`${mode === 'light' ? 'Light' : 'Dark'} compositions`} id={`lab-${mode}`} />
-    <section><h2>Stack and cluster</h2><Stack space="small"><Stack class="probe-regular-space"><p>Nested regular first.</p><p>Nested regular second.</p></Stack><p>First item.</p><p>Second item.</p><Cluster as="ul" space="small"><li><a href="/">Home</a></li><li><a href="/article/">A longer article label</a></li><li><a href="/documentation/">Documentation</a></li></Cluster></Stack></section>
+    <section><h2>Stack and cluster</h2><Stack space="small"><Stack class="probe-regular-space"><p>Nested regular first.</p><p>Nested regular second.</p></Stack><p>First item.</p><p>Second item.</p><Cluster as="ul" space="small"><li><a href={localPath('/')}>Home</a></li><li><a href={localPath('/article/')}>A longer article label</a></li><li><a href={localPath('/documentation/')}>Documentation</a></li></Cluster></Stack></section>
     <section><h2>A grid with three columns at most</h2><Grid columns={3} class="probe-grid">{[1,2,3,4,5].map(n=><Card><h3>Item {n}</h3><p>A column gives way when its minimum no longer fits.</p></Card>)}</Grid></section>
     <section><h2>A nested grid</h2><div style="max-inline-size:24rem"><Grid columns={2} class="probe-nested"><Card><p>Nested first</p></Card><Card><p>Nested second</p></Card></Grid></div></section>
     <section><h2>A supporting sidebar</h2><Sidebar class="probe-sidebar" sidebarLabel="Example supporting information"><p>Main content retains a useful minimum width.</p><div slot="sidebar"><h3>Supporting information</h3><p>The aside follows the main content.</p></div></Sidebar></section>
     <section><h2>A leading sidebar</h2><Sidebar side="start" class="probe-leading" sidebarLabel="Example navigation"><nav slot="sidebar" aria-label="Example sections"><a href="#stress">Go to stress content</a></nav><p>The navigation precedes the main content in both source and visual order.</p></Sidebar></section>
     <section><h2>A split feature</h2><Split class="probe-split"><div><h3>The primary region</h3><p>The default ratio belongs to this design family.</p></div><Card slot="secondary"><h3>The secondary region</h3><p>At narrow widths it follows the primary region.</p></Card></Split></section>
-    <section id={mode==='light'?'stress':undefined}><h2>Long references and code</h2><a href={`/#${letters}`}>{letters}</a><pre><code>{letters}</code></pre><div class="martlet-scroll" tabindex="0" role="region" aria-label={`${mode} wide table`}><table><caption>Wide data example</caption><thead><tr>{['First measurement','Second measurement','Third measurement','Fourth measurement'].map(x=><th scope="col">{x}</th>)}</tr></thead><tbody><tr>{[1,2,3,4].map(x=><td>{x}</td>)}</tr></tbody></table></div></section>
+    <section id={mode==='light'?'stress':undefined}><h2>Long references and code</h2><a href="#stress">{letters}</a><pre><code>{letters}</code></pre><div class="martlet-scroll" tabindex="0" role="region" aria-label={`${mode} wide table`}><table><caption>Wide data example</caption><thead><tr>{['First measurement','Second measurement','Third measurement','Fourth measurement'].map(x=><th scope="col">{x}</th>)}</tr></thead><tbody><tr>{[1,2,3,4].map(x=><td>{x}</td>)}</tr></tbody></table></div></section>
   </Stack></Section>)}
   <SiteFooter slot="footer"><p>Your footer content.</p></SiteFooter>
 </Layout>

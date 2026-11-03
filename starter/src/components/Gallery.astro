@@ -1,0 +1,43 @@
+---
+import { exampleImage } from '../assets.mjs';
+const {section, Button} = Astro.props;
+---
+<div class="gallery" data-gallery>
+  <div class="gallery-grid">{section.items.map(item => <figure>
+    <a href={exampleImage(item.image)} data-enlarge data-caption={item.caption}><img src={exampleImage(item.image)} alt={item.alt} width="960" height="640" loading="lazy" /><span>Enlarge {item.title}</span></a>
+    <figcaption>{item.caption}</figcaption>
+  </figure>)}</div>
+  <dialog aria-label="Image detail">
+    <h3>Image detail</h3><Button data-close-dialog>Close image</Button>
+    <figure><img alt="" width="960" height="640" /><figcaption></figcaption></figure>
+  </dialog>
+</div>
+<style>
+.gallery-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,17rem),1fr)); gap:1.5rem; }
+.gallery figure { margin:0; }
+.gallery img { display:block; width:100%; height:auto; }
+.gallery dialog { max-width:min(90vw, 64rem); max-height:90vh; overflow:auto; }
+</style>
+<script>
+  document.querySelectorAll('[data-gallery]').forEach(gallery => {
+    const dialog = gallery.querySelector('dialog');
+    if (!dialog || typeof dialog.showModal !== 'function') return;
+    let opener = null;
+    gallery.querySelectorAll('[data-enlarge]').forEach(link => link.addEventListener('click', event => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const image = dialog.querySelector('img');
+      image.src = link.href;
+      image.alt = link.querySelector('img').alt;
+      dialog.querySelector('figcaption').textContent = link.dataset.caption;
+      try { dialog.showModal(); } catch { return; }
+      event.preventDefault();
+      opener = link;
+    }));
+    dialog.querySelector('[data-close-dialog]').addEventListener('click', () => dialog.close());
+    dialog.addEventListener('close', () => {
+      if (dialog.open) return;
+      const active = document.activeElement;
+      if (opener?.isConnected && (!active || active === document.body || active === document.documentElement || dialog.contains(active))) opener.focus();
+    });
+  });
+</script>

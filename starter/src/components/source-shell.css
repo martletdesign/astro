@@ -1,0 +1,57 @@
+/* Contextual shell translation from the family source mastheads and grouped footers.
+   Host supplies identity and destinations; no source-site personal content is embedded. */
+.nightjar-header { background:#061325; color:#fff; position:relative; z-index:2; }
+.nightjar-header__inner { max-width:80rem; padding:1rem 1.5rem; margin:auto; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+.nightjar-brand { color:#fff; display:flex; align-items:center; gap:.65rem; font-weight:700; text-decoration:none; }
+.nightjar-brand img { inline-size:40px; block-size:40px; object-fit:contain; flex:none; }
+.nightjar-header nav { display:flex; gap:1.5rem; align-items:center; }
+.nightjar-header nav[hidden] { display:none; }
+.nightjar-header ul,.nightjar-footer ul { list-style:none; padding:0; margin:0; }
+.nightjar-header ul { display:flex; gap:1.5rem; align-items:center; }
+.nightjar-header a { color:#fff; }
+.nightjar-header a[aria-current=page] { text-decoration:underline; text-underline-offset:.35em; }
+.nightjar-menu,.nightjar-appearance { color:#fff; background:transparent; border:1px solid #a9b5c0; padding:.5rem .75rem; font:inherit; cursor:pointer; }
+.nightjar-menu { display:none; }
+.nightjar-header :focus-visible,.nightjar-footer :focus-visible { outline:3px solid #fff; outline-offset:3px; }
+.nightjar-masthead { background:#061325; color:#fff; }
+.nightjar-masthead__inner { max-width:80rem; padding:4rem 1.5rem 5rem; margin:auto; }
+.nightjar-masthead h1 { color:inherit; max-width:18ch; font-size:clamp(2.5rem,5vw,5rem); line-height:1.08; margin:.5rem 0 1rem; overflow-wrap:anywhere; }
+.nightjar-masthead p { color:inherit; max-width:65ch; }
+.nightjar-eyebrow { font:700 .75rem/1.5 sans-serif; letter-spacing:.12em; text-transform:uppercase; }
+.nightjar-footer { background:#061325; color:#fff; padding:4rem 1.5rem; }
+.nightjar-footer__inner { max-width:80rem; margin:auto; display:grid; grid-template-columns:minmax(12rem,2fr) repeat(auto-fit,minmax(9rem,1fr)); gap:2rem; }
+.nightjar-footer h2 { color:inherit; font:700 .85rem/1.5 sans-serif; text-transform:uppercase; }
+.nightjar-footer a { color:#fff; }
+.nightjar-footer li { margin-block:.6rem; }
+.nightjar-breadcrumb { max-width:72rem; margin:2rem auto 0; padding:0 1.5rem; }
+html[data-appearance=dark] .nightjar-masthead,html[data-appearance=dark] .nightjar-header { background:#f7f4eb; color:#061325; }
+html[data-appearance=dark] .nightjar-header a,html[data-appearance=dark] .nightjar-menu,html[data-appearance=dark] .nightjar-appearance { color:#061325; }
+html[data-appearance=dark] .nightjar-header :focus-visible { outline-color:#061325; }
+@media(max-width:68rem) {
+ .nightjar-header__inner { flex-wrap:wrap; }
+ .nightjar-header[data-navigation-ready] .nightjar-menu { display:block; }
+ .nightjar-header nav { width:100%; display:block; }
+ .nightjar-header ul { display:block; }
+ .nightjar-header li { margin:.75rem 0; }
+ .nightjar-footer__inner { grid-template-columns:1fr 1fr; }
+}
+@media(max-width:30rem) { .nightjar-footer__inner { grid-template-columns:1fr; } }
+body { margin:0; }
+/* Printing is for the document or report, not the site navigation chrome. */
+@media print {
+ main details::details-content { content-visibility: visible !important; }
+ /* Print legibly even when the browser omits background graphics. */
+ body, main { background:#fff !important; }
+ main, main * { color:#000 !important; text-shadow:none !important; }
+ main * { background-color:transparent !important; background-image:none !important; }
+ main svg text { fill:#000 !important; }
+ main :is(.recipe-table,.analytics-table,.example-table-scroll) { overflow:visible !important; }
+ #people-table[data-print-all] tbody:not([data-print-people]) { display:none; }
+ #people-table :is(th,td):first-child, #people-table :is(th,td):last-child { display:none; }
+ main table { table-layout:fixed; width:100%; max-width:100%; }
+ main :is(th,td) { min-width:0 !important; overflow-wrap:anywhere; word-break:break-word; font-size:9pt; }
+ main pre { white-space:pre-wrap !important; overflow-wrap:anywhere; word-break:break-word; overflow:visible !important; }
+ .nightjar-header, .nightjar-footer, .nightjar-breadcrumb { display:none !important; }
+ .nightjar-masthead, html[data-appearance=dark] .nightjar-masthead { background:transparent !important; color:#000 !important; }
+ .nightjar-masthead__inner { padding:0; }
+}

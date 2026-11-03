@@ -13,6 +13,24 @@ export async function formChecks(browser, base) {
     assert.deepEqual(violations.map(v => ({ id:v.id, nodes:v.nodes.map(n=>n.target) })), [], label);
   };
   try {
+    // The specimen must not submit personal-looking values when enhancement is absent.
+    for (const mode of ['nojs', 'blocked', 'partial']) {
+      const offline = await browser.newContext({javaScriptEnabled:mode !== 'nojs'});
+      const fallback = await offline.newPage();
+      const navigations = [];
+      fallback.on('request', request => { if (request.isNavigationRequest()) navigations.push(request.url()); });
+      if (mode === 'blocked') await fallback.route('**/*', async route => { if (route.request().isNavigationRequest()) { const response = await route.fetch(); return route.fulfill({response, headers:{...response.headers(), 'content-security-policy':"script-src 'none'"}}); } return route.request().resourceType() === 'script' ? route.abort() : route.continue(); });
+      if (mode === 'partial') await fallback.addInitScript(() => { const original = EventTarget.prototype.addEventListener; EventTarget.prototype.addEventListener = function(type, listener, options) { if (type === 'reset' && this instanceof HTMLFormElement && this.id === 'registration') throw new Error('synthetic registration setup failure'); return original.call(this,type,listener,options); }; });
+      await fallback.goto(base + '/form/');
+      assert.equal(await fallback.locator('#name').isDisabled(), true, `${mode}: form is disabled before complete initialization`);
+      assert.equal(await fallback.locator('#submit').isDisabled(), true, `${mode}: submit is disabled before complete initialization`);
+      assert.equal(await fallback.locator('#registration').evaluate(node => node.noValidate), false, `${mode}: native validation remains intact`);
+      assert.equal(await fallback.locator('#form-fallback').isVisible(), true, `${mode}: unavailable state is explained`);
+      const before = navigations.length;
+      await fallback.locator('#submit').evaluate(node => node.click());
+      assert.equal(navigations.length, before, `${mode}: disabled form never navigates`);
+      await offline.close();
+    }
     await page.goto(base + '/form/');
     await page.locator('h1').waitFor(); await page.evaluate(() => document.fonts.ready);
     assert.equal(await page.locator('#submit').evaluate(e=>e.type), 'submit');

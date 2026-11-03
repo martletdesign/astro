@@ -1,18 +1,20 @@
 ---
 import { Layout, SiteHeader, SiteFooter, Section, Stack, Button } from '@martlet/astro';
-import '@martlet/theme/source-profile.css';
+import '@martlet/core/source-profile.css';
+import { localPath } from '../paths';
 ---
 <Layout title="Registration example" mainTabindex={-1} bodyClass="martlet-source-profile">
-  <SiteHeader slot="header" name="Example workshop" links={[{href:'/',label:'Home'},{href:'/form/',label:'Registration',current:true}]}><Button slot="actions" id="appearance" aria-pressed="false">Dark appearance</Button></SiteHeader>
+  <SiteHeader slot="header" home={localPath('/')} name="Example workshop" links={[{href:localPath('/'),label:'Home'},{href:localPath('/form/'),label:'Registration',current:true}]}><Button slot="actions" id="appearance" aria-pressed="false">Dark appearance</Button></SiteHeader>
   <Section><Stack><h1>Workshop registration</h1><p class="martlet-eyebrow">A native HTML application extension</p>
     <p>This example sends nothing and stores nothing durably. The first valid attempt fails deliberately; retry succeeds.</p>
     <p><Button href="#registration" id="anchor-button">Go to the registration form</Button></p>
-    <form id="registration" class="martlet-form" aria-label="Workshop registration" novalidate>
+    <p id="form-fallback" role="status">Interactive registration is unavailable. Enable JavaScript and reload to use this local example.</p>
+    <form id="registration" class="martlet-form" aria-label="Workshop registration">
       <section id="summary" class="martlet-error-summary" role="alert" aria-labelledby="summary-title" tabindex="-1" hidden>
         <h2 id="summary-title">Check your registration</h2><ul id="summary-errors"></ul>
         <Button id="retry" hidden>Retry registration</Button>
       </section>
-      <fieldset class="martlet-fieldset" id="details">
+      <fieldset class="martlet-fieldset" id="details" disabled>
         <legend>Your details</legend>
         <div class="martlet-field">
           <label for="name">Name (required)</label><input id="name" name="name" required autocomplete="name" aria-describedby="name-hint name-error" />
@@ -23,17 +25,17 @@ import '@martlet/theme/source-profile.css';
           <p id="email-hint" class="martlet-hint">We would use this for registration details.</p><p id="email-error" class="martlet-error" hidden>Enter a valid email address.</p>
         </div>
       </fieldset>
-      <fieldset class="martlet-fieldset" id="attendance-group" tabindex="-1" aria-describedby="attendance-error">
+      <fieldset class="martlet-fieldset" id="attendance-group" tabindex="-1" aria-describedby="attendance-error" disabled>
         <legend>Attendance (required)</legend>
         <label class="martlet-radio"><input name="attendance" type="radio" value="studio" /><span>In the studio</span></label>
         <label class="martlet-radio"><input name="attendance" type="radio" value="online" /><span>Online</span></label>
         <p id="attendance-error" class="martlet-error" hidden>Choose how you will attend.</p>
       </fieldset>
-      <fieldset class="martlet-fieldset"><legend>Preferences</legend>
+      <fieldset class="martlet-fieldset" disabled><legend>Preferences</legend>
         <label class="martlet-checkbox"><input id="reminder" name="reminder" type="checkbox" /><span>Send a workshop reminder</span></label>
         <div class="martlet-field"><label for="notes">Access requirements (optional)</label><textarea id="notes" name="notes" rows="3"></textarea></div>
       </fieldset>
-      <div class="martlet-actions"><Button type="submit" id="submit">Register</Button><Button type="reset" id="reset-button" class="martlet-button--secondary">Reset registration</Button><Button id="default-button" class="martlet-button--quiet">Preview only</Button><Button disabled class="martlet-button--secondary" id="disabled-button">Unavailable</Button></div>
+      <div class="martlet-actions"><Button type="submit" id="submit" disabled>Register</Button><Button type="reset" id="reset-button" disabled class="martlet-button--secondary">Reset registration</Button><Button disabled id="default-button" class="martlet-button--quiet">Preview only</Button><Button disabled class="martlet-button--secondary" id="disabled-button">Unavailable</Button></div>
       <p id="status" class="martlet-notice" role="status" aria-atomic="true">Not submitted.</p>
     </form>
     <dialog id="discard" class="martlet-dialog" aria-labelledby="discard-title"><form method="dialog"><h2 id="discard-title">Discard this registration?</h2><p>Your unsent entries will be cleared.</p><div class="martlet-actions"><Button type="submit" value="keep" autofocus>Keep editing</Button><Button type="submit" value="discard" class="martlet-button--secondary">Discard entries</Button></div></form></dialog>

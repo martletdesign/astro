@@ -1,0 +1,79 @@
+---
+const {section, Button} = Astro.props;
+const filterId = `workspace:${section.id}:filter`;
+---
+<div class="workspace" data-workspace>
+  <div><label for={filterId}>Filter records</label><input id={filterId} type="search" data-record-filter disabled /><p data-record-count role="status"></p>
+    <ul class="workspace-records">{section.items.map(item => <li data-record data-record-id={item.id} data-record-owner={item.owner}>
+      <Button type="button" data-select-record aria-pressed="false" disabled>{item.title}</Button>
+      <span data-record-status>{item.status}</span><p data-record-summary>{item.summary}</p><p>{item.id} · {item.owner}</p>
+    </li>)}</ul>
+  </div>
+  <section aria-label={`Selected record — ${section.title}`}><h3>Selected record</h3><div data-active-record><p>Select a record to inspect it.</p></div>
+    <div class="workspace-actions"><Button type="button" data-review-record disabled>Mark reviewed locally</Button> <Button type="button" data-reset-workspace disabled>Reset demonstration</Button></div>
+    <p role="status" data-workspace-status>Local demonstration. No changes are saved.</p>
+  </section>
+</div>
+<noscript><p>The full record list is shown above. Selection and local review require JavaScript.</p></noscript>
+<style>
+.workspace { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,20rem),1fr)); gap:2rem; }
+.workspace-records { padding:0; list-style:none; }
+.workspace-records li { margin-block:1.5rem; }
+.workspace-records [data-record-status] { margin-inline-start:.75rem; }
+.workspace-actions { display:flex; flex-wrap:wrap; gap:.75rem; }
+</style>
+<script>
+  document.querySelectorAll('[data-workspace]').forEach(workspace => {
+    const records = [...workspace.querySelectorAll('[data-record]')];
+    const filter = workspace.querySelector('[data-record-filter]');
+    const review = workspace.querySelector('[data-review-record]');
+    const reset = workspace.querySelector('[data-reset-workspace]');
+    const detail = workspace.querySelector('[data-active-record]');
+    const status = workspace.querySelector('[data-workspace-status]');
+    const original = records.map(record => record.querySelector('[data-record-status]').textContent);
+    let active = null;
+    const count = () => { workspace.querySelector('[data-record-count]').textContent = `${records.filter(record => !record.hidden).length} of ${records.length} records shown.`; };
+    const select = record => {
+      active = record;
+      records.forEach(item => item.querySelector('[data-select-record]').setAttribute('aria-pressed', String(item === active)));
+      detail.replaceChildren();
+      for (const source of record.querySelectorAll('[data-select-record], [data-record-status], p')) {
+        const p = document.createElement('p'); p.textContent = source.textContent; detail.append(p);
+      }
+      review.disabled = false;
+      status.textContent = `Selected ${record.querySelector('[data-select-record]').textContent}. Changes affect this preview only.`;
+    };
+    records.forEach(record => {
+      const button = record.querySelector('[data-select-record]');
+      button.addEventListener('click', () => select(record));
+      button.disabled = false;
+    });
+    const matches = (record, query) => {
+      const fields = [record.querySelector('[data-select-record]').textContent, record.querySelector('[data-record-status]').textContent, record.querySelector('[data-record-summary]').textContent, record.dataset.recordId, record.dataset.recordOwner];
+      return fields.join(' ').toLocaleLowerCase().includes(query) || record.textContent.toLocaleLowerCase().includes(query);
+    };
+    const applyFilter = () => {
+      const query = filter.value.trim().toLocaleLowerCase();
+      records.forEach(record => { record.hidden = !matches(record, query); });
+      count();
+      if (active?.hidden) {
+        active.querySelector('[data-select-record]').setAttribute('aria-pressed', 'false');
+        active = null; detail.textContent = 'The selected record is outside this filter. Select a visible record.'; review.disabled = true;
+      }
+    };
+    filter.addEventListener('input', applyFilter);
+    review.addEventListener('click', () => {
+      if (!active) return;
+      active.querySelector('[data-record-status]').textContent = 'Reviewed locally';
+      select(active); applyFilter();
+      if (!active) { status.textContent = 'Marked reviewed in page memory. The record no longer matches this filter. No server record was changed.'; filter.focus(); }
+      else status.textContent = 'Marked reviewed in page memory. No server record was changed.';
+    });
+    reset.addEventListener('click', () => {
+      records.forEach((record, i) => { record.querySelector('[data-record-status]').textContent = original[i]; record.hidden = false; record.querySelector('[data-select-record]').setAttribute('aria-pressed', 'false'); });
+      active = null; filter.value = ''; detail.textContent = 'Select a record to inspect it.'; review.disabled = true;
+      status.textContent = 'Demonstration reset. No changes were saved.'; count();
+    });
+    filter.disabled = false; reset.disabled = false; count();
+  });
+</script>

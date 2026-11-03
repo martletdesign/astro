@@ -1,3 +1,3 @@
 /* Core owns every visual definition. This file adds no second palette. */
-@import '@martlet/theme/full.css';
-@import '@martlet/theme/fonts.css';
+@import '@martlet/core/full.css';
+@import '@martlet/core/fonts.css';

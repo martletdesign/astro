@@ -1,0 +1,79 @@
+---
+import catalog from '../../page-archetypes/content/catalog.json';
+import {supported} from '../supported.mjs';
+const {base, Button, id, title} = Astro.props;
+const inputId = `search:${id}:query`;
+const prefix = base.replace(/\/$/, '');
+const index = catalog.pages.map(entry => ({title:entry.title, summary:entry.summary, category:entry.category, url:`${prefix}/examples/${entry.id}/`, available:supported.includes(entry.id)}));
+const json = JSON.stringify(index).replace(/</g, '\\u003c');
+---
+<div data-example-search data-browse-url={`${prefix}/examples/`}>
+<form data-search action={`${prefix}/examples/search/`} role="search" aria-label={title}>
+  <label for={inputId}>Search the example record</label>
+  <div><input type="search" id={inputId} name="q" maxlength="200" placeholder="Try shoreline, workshop, or protocol" disabled /> <Button type="submit" disabled>Search</Button></div>
+</form>
+<p role="status" data-search-status>Search is unavailable.</p>
+<ul data-search-results></ul>
+<p data-search-fallback><a href={`${prefix}/examples/`}>Browse the complete example index</a>.</p>
+<noscript><p>Search requires JavaScript.</p></noscript>
+<script type="application/json" data-search-index is:inline set:html={json}></script>
+</div>
+<script>
+  document.querySelectorAll('[data-example-search]').forEach(container => {
+    const form = container.querySelector('[data-search]');
+    let index;
+    try { index = JSON.parse(container.querySelector('[data-search-index]').textContent); if (!Array.isArray(index) || !index.every(entry => entry && ['title','summary','category','url'].every(key => typeof entry[key] === 'string'))) return; } catch { return; }
+    const input = form.querySelector('input');
+    const submit = form.querySelector('button[type="submit"]');
+    const results = container.querySelector('[data-search-results]');
+    const status = container.querySelector('[data-search-status]');
+    const run = value => {
+      const query = value.trim().slice(0, 200);
+      input.value = query;
+      results.replaceChildren();
+      if (!query) { status.textContent = 'Enter a word or phrase to search the collection.'; return; }
+      const words = query.toLocaleLowerCase().split(/\s+/u);
+      const matches = index.filter(entry => words.every(word => `${entry.title} ${entry.summary} ${entry.category}`.toLocaleLowerCase().includes(word)));
+      if (matches.length) status.textContent = `${matches.length} result${matches.length === 1 ? '' : 's'} for “${query}”.`;
+      else {
+        const browse = document.createElement('a');
+        browse.href = container.dataset.browseUrl;
+        browse.textContent = 'browse the example index';
+        status.replaceChildren(document.createTextNode(`No results for “${query}”. Try fewer words or `), browse, document.createTextNode('.'));
+      }
+      for (const entry of matches) {
+        const item = document.createElement('li');
+        const heading = document.createElement('h3');
+        const label = document.createElement(entry.available ? 'a' : 'span');
+        if (entry.available) label.href = entry.url;
+        else label.dataset.destination = entry.url;
+        label.textContent = entry.title;
+        heading.append(label);
+        const summary = document.createElement('p');
+        summary.textContent = entry.summary;
+        item.append(heading, summary);
+        if (!entry.available) { const note = document.createElement('p'); note.textContent = 'Not yet available in this Astro preview.'; item.append(note); }
+        results.append(item);
+      }
+    };
+    const initial = (new URL(location.href).searchParams.get('q') || '').trim().slice(0, 200);
+    const initialUrl = new URL(location.href);
+    initial ? initialUrl.searchParams.set('q', initial) : initialUrl.searchParams.delete('q');
+    try { history.replaceState(history.state, '', initialUrl); } catch { return; }
+    window.addEventListener('nightjar:search-query', event => {
+      run(event.detail.value);
+      if (!event.detail.urlUpdated) status.append(document.createTextNode(' The address could not be updated; it may not reflect this search.'));
+    });
+    window.addEventListener('popstate', () => run(new URL(location.href).searchParams.get('q') || ''));
+    form.addEventListener('submit', event => {
+      event.preventDefault();
+      const query = input.value.trim().slice(0, 200), url = new URL(location.href);
+      query ? url.searchParams.set('q', query) : url.searchParams.delete('q');
+      let urlUpdated = true;
+      try { history.replaceState(history.state, '', url); } catch { urlUpdated = false; }
+      window.dispatchEvent(new CustomEvent('nightjar:search-query', {detail: {value: query, urlUpdated}}));
+    });
+    run(initial);
+    input.disabled = false; submit.disabled = false; container.querySelector('[data-search-fallback]').hidden = true;
+  });
+</script>

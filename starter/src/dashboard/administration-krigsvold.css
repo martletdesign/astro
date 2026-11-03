@@ -1,0 +1,3 @@
+.dash-app .dash-sidebar { border:1px solid var(--ex-line); background:var(--ex-panel); }
+html[data-appearance=dark] .dash-app .krigsvold-button { color:var(--krigsvold-text); background:var(--krigsvold-button-secondary-bg); border-color:var(--krigsvold-button-secondary-bg); }
+html[data-appearance=dark] .dash-app .krigsvold-button:hover { background:var(--krigsvold-button-secondary-hover); }
