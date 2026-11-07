@@ -45,7 +45,7 @@ test('tag completion verifies staged publication without npm publication authori
   const workflow=await readFile('.github/workflows/tag-release.yml','utf8');
   await assert.rejects(readFile('.github/workflows/publish.yml','utf8'),{code:'ENOENT'});
   assert.match(workflow,/push:\s*\n\s*tags:\s*\['v\*'\]/);
-  assert.match(workflow,/environment:\s*astro-production-release/);
+  assert.doesNotMatch(workflow,/environment:|id-token:/);
   assert.doesNotMatch(workflow,/if:\s*\$\{\{ false \}\}|id-token:|npm (?:publish|stage publish)/);
   assert.match(workflow,/verify-registry/);
   assert.match(workflow,/verify-provenance/);

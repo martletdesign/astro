@@ -47,7 +47,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$APPROVED_SHA"
           git fetch origin main
           test "$(git rev-parse origin/main)" = "$APPROVED_SHA"
-      - run: npm ci --ignore-scripts --legacy-peer-deps --no-audit --no-fund && npm test
+      - run: npm ci --ignore-scripts --legacy-peer-deps --no-audit --no-fund && npm test && git diff --exit-code
       - name: Export the exact public archive and verify its identity and registry absence
         env:
           EXPECTED_SHA256: ${{ inputs.artifact_sha256 }}
@@ -69,4 +69,7 @@ jobs:
           set -euo pipefail
           [[ "$NPM_TAG" = next || "$NPM_TAG" = latest ]]
           VERSION=$(node -p 'JSON.parse(require("fs").readFileSync("package.json")).version')
+          git fetch origin main
+          test "$(git rev-parse origin/main)" = "$GITHUB_SHA"
+          RELEASE_TAG="v$VERSION" node scripts/tag-release-cli.mjs confirm-absent
           npm stage publish "$RUNNER_TEMP/astro-out/martlet-astro-$VERSION.tgz" --access public --tag "$NPM_TAG" --provenance
