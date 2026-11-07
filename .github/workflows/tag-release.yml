@@ -71,3 +71,15 @@ jobs:
           args=("$RELEASE_TAG" "martlet-astro-${{ steps.identity.outputs.version }}.tgz" SHA256SUMS --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes)
           if [ "$CHANNEL" = next ]; then args+=(--prerelease); fi
           gh release create "${args[@]}"
+      - name: Verify public source release downloads
+        run: |
+          set -euo pipefail
+          mkdir "$RUNNER_TEMP/public-downloads"
+          cd "$RUNNER_TEMP/public-downloads"
+          origin="https://github.com/$GITHUB_REPOSITORY/releases/download/$RELEASE_TAG"
+          archive="martlet-astro-${{ steps.identity.outputs.version }}.tgz"
+          for asset in "$archive" SHA256SUMS; do
+            curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' --connect-timeout 10 --max-time 60 "$origin/$asset" --output "$asset"
+            cmp "$asset" "$RUNNER_TEMP/astro-out/$asset"
+          done
+          sha256sum --check SHA256SUMS

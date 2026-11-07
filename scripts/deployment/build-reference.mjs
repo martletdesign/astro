@@ -38,8 +38,8 @@ try {
     console.log(`ASTRO_REFERENCE_BUILD family=${pin.family} operation=build base=${base} sha=${sha}`);
     run(['npm','run','build'],site,{NIGHTJAR_BASE:base});
     const built=join(site,'dist');await checkDashboardFamily(built,pin.family);
-    run(['python3',join(source,'scripts/docs-versions/verify-canonical.py'),built,join(site,'page-archetypes/content/catalog.json')]);
-    run(['python3',join(source,'scripts/docs-versions/verify-html.py'),built,'--baseurl',base==='/'?'':base.slice(0,-1)]);
+    console.log(run(['python3',join(source,'scripts/docs-versions/verify-canonical.py'),built,join(site,'page-archetypes/content/catalog.json')]).trim());
+    console.log(run(['python3',join(source,'scripts/docs-versions/verify-html.py'),built,'--baseurl',base==='/'?'':base.slice(0,-1)]).trim());
     await cp(built,base==='/'?output:join(output,'preview'),{recursive:true});
     console.log(`ASTRO_REFERENCE_BUILD family=${pin.family} operation=verified base=${base} sha=${sha}`);
   }

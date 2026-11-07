@@ -52,7 +52,7 @@ Alternatively copy `node_modules/@martlet/astro/starter/` from an existing insta
 
 ## Compatibility and maintenance
 
-Astro 5–7 is the supported peer range. Both current consumers exercise the package (Astro 5.18.2 and 7.3.2). See [the extraction and migration playbook](docs/playbook.md) for release ordering, provenance, and validation. Acceptance follows the [canonical GitFlow policy](https://github.com/k3jph/design-workbench/blob/develop/docs/GITFLOW-ACCEPTANCE.md): one fast required check and zero required reviewers. Browser and compatibility suites provide advisory evidence.
+Astro 5–7 is the supported peer range. Packed consumers exercise Astro 5.14.0, 6.0.0 and 7.3.2; the advisory hosted browser matrix covers 5.18.2 and 7.3.2. See [the extraction and migration playbook](docs/playbook.md) for release ordering, provenance, and validation. Acceptance follows the [canonical GitFlow policy](https://github.com/k3jph/design-workbench/blob/develop/docs/GITFLOW-ACCEPTANCE.md): one fast required check and zero required reviewers. Browser and compatibility suites provide advisory evidence.
 
 ## Layout system
 
