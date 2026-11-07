@@ -26,6 +26,16 @@ try{
   console.log(`${engine}: checking ${prefix}examples/${route}/ across repeated mobile/desktop resize`);
   const response=await page.goto(`${origin}${prefix}examples/${route}/`,{waitUntil:'networkidle'});assert.equal(response.status(),200);assert.equal(await page.locator('h1').count(),1);
   if(route!=='dashboard-administration')await page.locator('[data-chart] svg').first().waitFor();
+  // Verify that native family tokens resolve in an ordinary no-env starter.
+  for(const mode of ['light','dark']){
+   await page.evaluate(({family,mode})=>{document.documentElement.setAttribute(`data-${family}`,mode);document.documentElement.dataset.appearance=mode;},{family:'martlet',mode});
+   const tokens=await page.locator('[data-dashboard], [data-analytics-dashboard]').first().evaluate((element,family)=>{
+    const style=getComputedStyle(element),analytics=element.hasAttribute('data-analytics-dashboard');
+    return {text:style.getPropertyValue(analytics?'--a-text':'--ex-text').trim(),nativeText:style.getPropertyValue(`--${family}-text`).trim(),chart:style.getPropertyValue('--dash-chart-primary').trim(),nativeChart:style.getPropertyValue(`--${family}-chart-1`).trim()};
+   },'martlet');
+   assert.ok(tokens.text && tokens.chart,`${route} ${mode} native semantic tokens must resolve`);
+   assert.equal(tokens.text,tokens.nativeText);assert.equal(tokens.chart,tokens.nativeChart);
+  }
   for(const width of [320,1440,320,1440]){
    await page.setViewportSize({width,height:900});
    await page.evaluate(()=>new Promise(done=>requestAnimationFrame(()=>requestAnimationFrame(done))));await page.waitForTimeout(150);

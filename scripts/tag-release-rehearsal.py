@@ -10,7 +10,7 @@ def run(args,cwd=repo,env=None,quiet=True):
  if p.returncode: print('FAILED',args,p.stdout[-1200:],p.stderr[-1200:]);raise SystemExit(p.returncode)
  return p.stdout.strip()
 a=subprocess.run(['git','archive','HEAD'],cwd=src,stdout=subprocess.PIPE,check=True)
-subprocess.run(['tar','-x','-C',str(repo)],input=a.stdout,check=True)
+subprocess.run(['tar','--same-permissions','-x','-C',str(repo)],input=a.stdout,check=True)
 version='9999.0.0-nightjar.0'
 for f in ['package.json','package-lock.json']:
  p=repo/f;d=json.loads(p.read_text());d['version']=version
@@ -25,7 +25,7 @@ run(['git','init','-b','main']);run(['git','config','user.email','rehearsal@exam
 identity=('martletdesign/astro' if family=='martlet' else 'krigsvolddesign/astro')
 env.update({'RELEASE_TAG':tag,'GITHUB_REPOSITORY':identity,'GITHUB_SHA':sha,'REF_PROTECTED':'true','RELEASE_ENVIRONMENT_READY':'yes','GITHUB_OUTPUT':str(base/'outputs')})
 run(['node','scripts/tag-release-cli.mjs','preflight'],env=env)
-export=base/'export';export.mkdir();archive=subprocess.run(['git','archive','HEAD'],cwd=repo,stdout=subprocess.PIPE,check=True);subprocess.run(['tar','-x','-C',str(export)],input=archive.stdout,check=True)
+export=base/'export';export.mkdir();archive=subprocess.run(['git','archive','HEAD'],cwd=repo,stdout=subprocess.PIPE,check=True);subprocess.run(['tar','--same-permissions','-x','-C',str(export)],input=archive.stdout,check=True)
 p=export/'package.json';d=json.loads(p.read_text());assert d['private'] is True;d['private']=False;p.write_text(json.dumps(d,indent=2)+'\n')
 out=base/'out';out.mkdir();result=json.loads(run(['npm','pack','--ignore-scripts','--pack-destination',str(out),'--json'],cwd=export,env=env));artifact=out/result[0]['filename']
 run(['node','scripts/tag-release-cli.mjs','inspect',str(artifact)],env=env)

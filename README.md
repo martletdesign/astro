@@ -1,16 +1,16 @@
 # Martlet for Astro
 
-> **Unpublished migration candidate:** this private Astro 2.0.0 preview requires the unpublished local `@martlet/core` artifact. Existing `@martlet/astro@1.2.2` and `@martlet/theme` remain supported separately. No registry release is implied.
+`@martlet/astro` 2.x integrates the independently published `@martlet/core` package. Version 2.0.0 is already available from npm; this source prepares the compatible 2.0.1 maintenance release.
 
 `@martlet/astro` provides reusable Astro layouts and components. The framework-independent [`@martlet/core`](https://github.com/martletdesign/core) package owns the design definitions and font roles, extracted from jameshoward.us. Astro adds composition, never a competing palette.
 
 ## Install
 
 ```sh
-npm install ./PATH-TO-martlet-core.tgz ./PATH-TO-martlet-astro.tgz astro
+npm install @martlet/core @martlet/astro astro
 ```
 
-The GitHub organization is `martlettheme`; the npm scope is `martlet`.
+The GitHub organization is `martletdesign`; the npm scope is `martlet`.
 
 ## Use
 
@@ -35,13 +35,13 @@ Components also have direct exports such as `@martlet/astro/Container.astro`. Fo
 
 ## Starter
 
-Obtain the shipped starter without a repository checkout:
+Obtain the matching shipped starter without a repository checkout after verifying the version is available from npm:
 
 ```sh
 mkdir example && cd example
-npm pack @martlet/astro@1.2.2
+npm pack @martlet/astro@2.0.1
 # Extract the downloaded martlet-astro-*.tgz into this directory.
-tar -xzf martlet-astro-1.2.2.tgz
+tar -xzf martlet-astro-2.0.1.tgz
 cp -R package/starter/. .
 rm -rf package
 npm install
@@ -52,7 +52,7 @@ Alternatively copy `node_modules/@martlet/astro/starter/` from an existing insta
 
 ## Compatibility and maintenance
 
-Astro 5–7 is the supported peer range. Both current consumers exercise the package (Astro 5.18.2 and 7.3.2). See [the extraction and migration playbook](docs/playbook.md) for release ordering, provenance, and validation. Publish only after both consuming sites pass their checks; CI never publishes automatically.
+Astro 5–7 is the supported peer range. Packed consumers exercise Astro 5.14.0, 6.0.0 and 7.3.2; the advisory hosted browser matrix covers 5.18.2 and 7.3.2. See [the extraction and migration playbook](docs/playbook.md) for release ordering, provenance, and validation. Acceptance follows the [canonical GitFlow policy](https://github.com/k3jph/design-workbench/blob/develop/docs/GITFLOW-ACCEPTANCE.md): one fast required check and zero required reviewers. Browser and compatibility suites provide advisory evidence.
 
 ## Layout system
 
@@ -60,12 +60,16 @@ Version 1.1 adds `Stack`, `Cluster`, `Grid`, `Sidebar`, `Split`, `Section`, `Pag
 
 ## Releases
 
-Stable GitHub releases can publish automatically through npm trusted publishing. See [release setup](docs/releasing.md) for the one-time package authorization and release order.
+npm publication uses the existing stage-only trusted publisher and an explicit npm owner approval. Protected tags subsequently complete verified GitHub source releases. See [release setup](docs/releasing.md) for the one-time package authorization and release order.
 
 ## Experimental UI language
 
-Astro 1.2.2 pairs with core ^2.2.2. [New contents/footer contracts and migration](docs/consolidation.md) are additive; existing slots, default footer, and supporting sidebar behavior remain available. The article starter exercises the additions.
+The 1.2.x line historically used `@martlet/theme`. Astro 2.0.1 requires `@martlet/core@^2.2.4`; existing component APIs and slots remain available. [New contents/footer contracts and migration](docs/consolidation.md) are additive; existing slots, default footer, and supporting sidebar behavior remain available. The article starter exercises the additions.
 
 ## Forms
 
 The starter `/form/` demonstrates native HTML with supported core form classes, explicit submit/reset types, validation, retained input, simulated failure/retry, and a changed-reset dialog. Nothing is sent or stored durably. Its local controls start disabled and are enabled only after initialization completes. If JavaScript is disabled, blocked, or fails during setup, an unavailable message remains visible and values cannot be submitted to the hosting server. Core owns the appearance; the small controller is host example code, not a new Astro API. See the core [form styling contract](https://github.com/martletdesign/core/blob/main/docs/form-styling.md). A `Button` accepts `type="submit"`, `type="reset"`, or its default `type="button"` without duplicate attributes; modifiers use `class="martlet-button--secondary"`.
+
+## Reference delivery
+
+The starter includes all 50 canonical examples, three dashboards, and a separate scientific workspace. These are explicitly simulated host applications, not exported Astro controllers. See [native Cloudflare delivery](docs/deployment.md) for source identity, integrity, previews, and rollback.

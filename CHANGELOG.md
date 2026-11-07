@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.0.1
+
+- Require Core 2.2.4 so native input placeholders retain readable contrast in both appearances.
+- Give the analytics table scroll region its own accessible name.
+- Fix independently installed dashboard family tokens and source styling without build-only environment variables.
+- Correct installation and publication guidance for the published Core integration.
+- Complete stage-only trusted publication and verified GitHub source releases.
+- Add native static reference delivery with accepted-source and artifact verification.
+
 ## 2.0.0 — core migration candidate
 
 - Prepare the independent core peer and versioned documentation archive; publication remains disabled pending immutable storage verification.
