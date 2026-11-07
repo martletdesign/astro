@@ -2,6 +2,7 @@
 
 ## 2.0.1
 
+- Require Core 2.2.4 so native input placeholders retain readable contrast in both appearances.
 - Give the analytics table scroll region its own accessible name.
 - Fix independently installed dashboard family tokens and source styling without build-only environment variables.
 - Correct installation and publication guidance for the published Core integration.

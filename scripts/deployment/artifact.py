@@ -57,6 +57,8 @@ def guard(c, branch, sha):
     assert os.environ.get('GITHUB_REPOSITORY',c['repository'])==c['repository'],'Repository identity differs'
     local=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True,timeout=15).strip()
     assert local==sha,'Checked-out commit differs from requested deployment'
+    clean=subprocess.run(['git','diff','--quiet','HEAD','--'],cwd=ROOT,capture_output=True,text=True,timeout=15,check=False)
+    assert clean.returncode==0,'Dirty tracked source must not deploy'
     reported_branch=os.environ.get('WORKERS_CI_BRANCH')
     reported_sha=os.environ.get('WORKERS_CI_COMMIT_SHA')
     assert reported_branch is None or reported_branch==branch,'Cloudflare branch differs from target'
@@ -115,6 +117,8 @@ def finalize(c, branch, sha, destination):
     return metadata
 
 def validate_artifact(c, branch, sha, directory):
+    assert directory is not None and not directory.is_symlink(),'Deployment directory must not be a symlink'
+    directory=directory.resolve();assert directory==ROOT/'.cloudflare-site','Deployment directory escapes the verified output'
     m=json.loads((directory/'.well-known/deployment.json').read_text())
     assert m['repository']==c['repository'] and m['branch']==branch and m['sourceCommit']==sha
     assert m['worker']==c['targets'][branch]['worker'] and m['url']==c['targets'][branch]['origin']
@@ -128,12 +132,35 @@ def validate_artifact(c, branch, sha, directory):
     assert expected==actual,'Artifact bytes or paths changed after verified build'
     return m,inv
 
-def request(url, *, data=None, headers=None, method=None):
-    req=urllib.request.Request(url,data=data,headers=headers or {},method=method)
-    try:
-        with urllib.request.urlopen(req,timeout=25) as r:return r.status,r.read(),dict(r.headers)
-    except urllib.error.HTTPError as e:
-        return e.code,e.read(),dict(e.headers)
+def request(url, *, data=None, headers=None, method=None, timeout=25):
+    """Bound the entire API response, including a slow body. Never argv secrets."""
+    parsed=urllib.parse.urlsplit(url);headers=headers or {}
+    loopback=parsed.scheme=='http' and parsed.hostname in ('127.0.0.1','localhost','::1')
+    assert parsed.scheme=='https' or (loopback and not any(k.lower()=='authorization' for k in headers)),'API transport must use HTTPS'
+    assert not parsed.username and not parsed.password and timeout>0
+    config=['url = '+json.dumps(url)]
+    for name,value in headers.items():
+        assert re.fullmatch(r'[A-Za-z0-9-]+',name) and '\r' not in value and '\n' not in value,'Invalid API header'
+        config.append('header = '+json.dumps(name+': '+value))
+    with tempfile.TemporaryDirectory(prefix='astro-api-fetch-') as temporary:
+        directory=Path(temporary);body=directory/'body';response_headers=directory/'headers'
+        if data is not None:
+            payload=directory/'request';payload.write_bytes(data)
+            config.append('data-binary = '+json.dumps('@'+str(payload)))
+        command=['curl','--disable','--silent','--show-error','--config','-','--proto','=http,https' if loopback else '=https','--request',method or ('POST' if data is not None else 'GET'),'--connect-timeout',str(min(10,timeout)),'--max-time',str(timeout),'--max-filesize',str(4*1024*1024),'--dump-header',str(response_headers),'--output',str(body),'--write-out','%{http_code}']
+        try:
+            completed=subprocess.run(command,input='\n'.join(config)+'\n',text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=timeout+3,check=False)
+        except subprocess.TimeoutExpired as error:
+            raise TimeoutError('API response exceeded its total wall-clock deadline') from error
+        if completed.returncode==28:raise TimeoutError('API response exceeded its total wall-clock deadline')
+        assert completed.returncode==0,'API request failed or exceeded the bounded response size'
+        assert body.stat().st_size<=4*1024*1024,'API response exceeds size limit'
+        raw=response_headers.read_bytes();assert len(raw)<=1024*1024,'API headers exceed size limit'
+        last=raw.strip().split(b'\r\n\r\n')[-1].decode('iso-8859-1');fields={}
+        for line in last.splitlines()[1:]:
+            name,separator,value=line.partition(':')
+            if separator:fields[name.strip().lower()]=value.strip()
+        return int(completed.stdout),body.read_bytes(),fields
 
 def public_bytes(url, timeout=25):
     """A real HTTPS fetch with a wall-clock deadline, including redirects/body."""
@@ -215,6 +242,7 @@ def main():
     elif a.operation=='verify-artifact':out=validate_artifact(c,a.branch,a.sha,a.directory)[0]
     elif a.operation=='verify-live':out=verify_live(c,a.branch,a.sha,a.directory)
     else:
+        validate_artifact(c,a.branch,a.sha,a.directory)
         out={'name':c['targets'][a.branch]['worker'],'account_id':c['accountId'],'compatibility_date':'2026-11-03','workers_dev':True,'assets':{'directory':str(a.directory.resolve()),'html_handling':'auto-trailing-slash','not_found_handling':'404-page'}}
         if a.branch=='develop':out['previews']={'vars':{}}
     if a.output:a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_bytes(json_bytes(out))

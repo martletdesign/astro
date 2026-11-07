@@ -5,7 +5,7 @@
 ## Publication
 
 1. Accept compatible Core changes first, then Astro through `develop` and a release branch into `main`. The canonical GitFlow policy requires one fast check, no human review gate; extended suites are advisory.
-2. Compute the normalized package archive with Node 24.19.0 and npm 11.15.0. Dispatch existing `stage.yml` on `main` with its exact SHA, archive SHA-256 and intended `latest`/`next` tag. It checks current main, exact package identity and registry absence before staging.
+2. Compute the normalized package archive with Node 24.19.0 and npm 11.15.0. Dispatch existing `stage.yml` on `main` with its exact SHA, archive SHA-256 and intended `latest`/`next` tag. It checks current main, exact package identity, genuine publication and integrity of the pinned Core dependency, and Astro registry absence before staging.
 3. The existing trusted publisher is repository `martletdesign/astro`, workflow `stage.yml`, environment `astro-production-release`, **stage-only**. Preserve 2FA. An npm owner approves the genuine stage identity; never approve a bootstrap sentinel. No broad token or direct publication is permitted.
 4. Verify registry version, tarball bytes, signatures and SLSA provenance. Its actual source is the accepted main commit and `stage.yml` dispatched on `refs/heads/main`.
 5. Create the new protected `v` + exact package version tag on eligible main history only after publication and production verification. Never overwrite a tag or release. Existing `tag-release.yml` verifies exact published bytes and provenance and then creates the absent GitHub source Release with the package archive and `SHA256SUMS`. It never publishes to npm.

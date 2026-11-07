@@ -64,7 +64,7 @@ npm publication uses the existing stage-only trusted publisher and an explicit n
 
 ## Experimental UI language
 
-The 1.2.x line historically used `@martlet/theme`. Astro 2.x uses `@martlet/core@^2.2.3`; existing component APIs and slots remain available. [New contents/footer contracts and migration](docs/consolidation.md) are additive; existing slots, default footer, and supporting sidebar behavior remain available. The article starter exercises the additions.
+The 1.2.x line historically used `@martlet/theme`. Astro 2.0.1 requires `@martlet/core@^2.2.4`; existing component APIs and slots remain available. [New contents/footer contracts and migration](docs/consolidation.md) are additive; existing slots, default footer, and supporting sidebar behavior remain available. The article starter exercises the additions.
 
 ## Forms
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import json
+import re
 from pathlib import Path
 import subprocess
 from artifact import ROOT, read_config, guard, validate_artifact, verify_live, json_bytes
@@ -31,12 +32,15 @@ def parse_preview_output(raw, *, expected_name="develop"):
     return data
 
 
-sha=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
-c=read_config();guard(c,'develop',sha);directory=ROOT/'.cloudflare-site'
-validate_artifact(c,'develop',sha,directory)
-raw=ROOT/'.cloudflare-preview-result.json';assert raw.stat().st_size<=MAX_PREVIEW_OUTPUT_BYTES
-result=parse_preview_output(raw.read_text())
-verified=verify_live(c,'develop',sha,directory)
-receipt={'status':'passed','repository':c['repository'],'sourceCommit':sha,'branch':'develop','preview':result,'verification':verified,'productionDeployInvoked':False,'runtimeBindingReadbackClaimed':False}
-(ROOT/'.cloudflare-preview-receipt.json').write_bytes(json_bytes(receipt))
-print(json.dumps(receipt,sort_keys=True))
+def main():
+    sha=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
+    c=read_config();guard(c,'develop',sha);directory=ROOT/'.cloudflare-site'
+    validate_artifact(c,'develop',sha,directory)
+    raw=ROOT/'.cloudflare-preview-result.json';assert raw.stat().st_size<=MAX_PREVIEW_OUTPUT_BYTES
+    result=parse_preview_output(raw.read_text())
+    verified=verify_live(c,'develop',sha,directory)
+    receipt={'status':'passed','repository':c['repository'],'sourceCommit':sha,'branch':'develop','preview':result,'verification':verified,'productionDeployInvoked':False,'runtimeBindingReadbackClaimed':False}
+    (ROOT/'.cloudflare-preview-receipt.json').write_bytes(json_bytes(receipt))
+    print(json.dumps(receipt,sort_keys=True))
+
+if __name__=='__main__':main()
