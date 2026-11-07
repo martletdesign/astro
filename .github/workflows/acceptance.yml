@@ -1,0 +1,25 @@
+name: Fast acceptance
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+permissions:
+  contents: read
+concurrency:
+  group: astro-accept-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  accept:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts --legacy-peer-deps --no-audit --no-fund
+      - run: npm test
