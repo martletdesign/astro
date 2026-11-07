@@ -59,7 +59,7 @@ export function verifyArchive({local,remote,metadata,name,version}) {
 
 // The caller must supply output from a successful `npm audit signatures
 // --json --include-attestations`; npm cryptographically verifies these bundles.
-export function verifyProvenance({audit,archive,name,version,repository,tag,commit,expectedWorkflow='.github/workflows/tag-release.yml',expectedRef=`refs/tags/${tag}`,expectedEvent='push'}) {
+export function verifyProvenance({audit,archive,name,version,repository,tag,commit,expectedWorkflow='.github/workflows/stage.yml',expectedRef='refs/heads/main',expectedEvent='workflow_dispatch'}) {
   if(!Array.isArray(audit?.invalid)||audit.invalid.length||!Array.isArray(audit?.missing)||audit.missing.length) return false;
   const entry=audit?.verified?.find(x=>x.name===name&&x.version===version);
   const bundle=entry?.attestationBundles?.find(x=>x.predicateType==='https://slsa.dev/provenance/v1')?.bundle;

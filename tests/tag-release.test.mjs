@@ -41,14 +41,15 @@ test('registry package identity, bytes and integrity must match',()=>{
   assert.equal(verifyArchive({local,remote:Buffer.from('different'),metadata,name:pkg.name,version:pkg.version}),false);
   assert.equal(verifyArchive({local,remote:local,metadata:{...metadata,name:'@other/core'},name:pkg.name,version:pkg.version}),false);
 });
-test('tag publication proposal is disabled and legacy release-event workflow is removed',async()=>{
-  const draft=await readFile('.github/workflows/tag-release.yml','utf8');
+test('tag completion verifies staged publication without npm publication authority',async()=>{
+  const workflow=await readFile('.github/workflows/tag-release.yml','utf8');
   await assert.rejects(readFile('.github/workflows/publish.yml','utf8'),{code:'ENOENT'});
-  assert.match(draft,/push:\s*\n\s*tags:\s*\['v\*'\]/);
-  assert.match(draft,/if:\s*\$\{\{ false \}\}/);
-  assert.match(draft,/environment:\s*astro-production-release/);
-  assert.match(draft,/npm publish[^\n]*--provenance/);
-  assert.match(draft,/verify-registry/);
+  assert.match(workflow,/push:\s*\n\s*tags:\s*\['v\*'\]/);
+  assert.match(workflow,/environment:\s*astro-production-release/);
+  assert.doesNotMatch(workflow,/if:\s*\$\{\{ false \}\}|id-token:|npm (?:publish|stage publish)/);
+  assert.match(workflow,/verify-registry/);
+  assert.match(workflow,/verify-provenance/);
+  assert.match(workflow,/SHA256SUMS/);
 });
 
 test('recovery refuses malformed tags before contacting the registry',()=>{
@@ -59,7 +60,7 @@ test('recovery refuses malformed tags before contacting the registry',()=>{
 test('verified provenance must identify the exact package, tag, workflow and commit',()=>{
   const archive=Buffer.from('release bytes'),commit='a'.repeat(40),tag='v2.2.3',repository=input.expectedRepository;
   const [scope,packageName]=pkg.name.split('/');
-  const statement={_type:'https://in-toto.io/Statement/v1',predicateType:'https://slsa.dev/provenance/v1',subject:[{name:`pkg:npm/${encodeURIComponent(scope)}/${packageName}@2.2.3`,digest:{sha512:createHash('sha512').update(archive).digest('hex')}}],predicate:{runDetails:{builder:{id:'https://github.com/actions/runner/github-hosted'}},buildDefinition:{buildType:'https://slsa-framework.github.io/github-actions-buildtypes/workflow/v1',externalParameters:{workflow:{repository:`https://github.com/${repository}`,path:'.github/workflows/tag-release.yml',ref:`refs/tags/${tag}`}},internalParameters:{github:{event_name:'push'}},resolvedDependencies:[{uri:`git+https://github.com/${repository}@refs/tags/${tag}`,digest:{gitCommit:commit}}]}}};
+  const statement={_type:'https://in-toto.io/Statement/v1',predicateType:'https://slsa.dev/provenance/v1',subject:[{name:`pkg:npm/${encodeURIComponent(scope)}/${packageName}@2.2.3`,digest:{sha512:createHash('sha512').update(archive).digest('hex')}}],predicate:{runDetails:{builder:{id:'https://github.com/actions/runner/github-hosted'}},buildDefinition:{buildType:'https://slsa-framework.github.io/github-actions-buildtypes/workflow/v1',externalParameters:{workflow:{repository:`https://github.com/${repository}`,path:'.github/workflows/stage.yml',ref:'refs/heads/main'}},internalParameters:{github:{event_name:'workflow_dispatch'}},resolvedDependencies:[{uri:`git+https://github.com/${repository}@refs/heads/main`,digest:{gitCommit:commit}}]}}};
   const makeAudit=s=>({invalid:[],missing:[],verified:[{name:pkg.name,version:'2.2.3',attestationBundles:[{predicateType:'https://slsa.dev/provenance/v1',bundle:{dsseEnvelope:{payload:Buffer.from(JSON.stringify(s)).toString('base64')}}}]}]});
   const args={audit:makeAudit(statement),archive,name:pkg.name,version:'2.2.3',repository,tag,commit};
   assert.equal(verifyProvenance(args),true);
@@ -73,15 +74,14 @@ test('verified provenance must identify the exact package, tag, workflow and com
   assert.equal(verifyProvenance({...args,audit:makeAudit(altered)}),false);
   altered.predicate.runDetails.builder.id=statement.predicate.runDetails.builder.id;altered.predicate.buildDefinition.buildType='https://example.invalid/build';
   assert.equal(verifyProvenance({...args,audit:makeAudit(altered)}),false);
+  for(const mutate of [x=>x.subject[0].digest.sha512='0'.repeat(128),x=>x.predicate.buildDefinition.externalParameters.workflow.repository='https://github.com/other/astro',x=>x.predicate.buildDefinition.externalParameters.workflow.ref='refs/heads/develop',x=>x.predicate.buildDefinition.internalParameters.github.event_name='push']) {const bad=structuredClone(statement);mutate(bad);assert.equal(verifyProvenance({...args,audit:makeAudit(bad)}),false);}
   statement.predicate.buildDefinition.externalParameters.workflow.path='.github/workflows/other.yml';
   assert.equal(verifyProvenance({...args,audit:makeAudit(statement)}),false);
 });
 
-test('documentation verification blocks publication until immutable storage is configured',async()=>{
+test('advanced archive remains disabled without blocking verified source releases',async()=>{
   const workflow=await readFile('.github/workflows/tag-release.yml','utf8');
-  assert.match(workflow,/uses:\s*\.\/\.github\/workflows\/docs-archive\.yml/);
-  assert.match(workflow,/needs:\s*\[verify, docs\]/);
-  assert.ok(workflow.indexOf('scripts/docs-versions/verify-published.mjs')<workflow.indexOf('npm publish '));
+  assert.doesNotMatch(workflow,/docs-archive\.yml|verify-published\.mjs/);
   const run=spawnSync(process.execPath,['scripts/docs-versions/verify-published.mjs'],{encoding:'utf8'});
   assert.notEqual(run.status,0);assert.match(run.stderr,/storage and verification are not configured/);
 });

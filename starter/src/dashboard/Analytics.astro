@@ -5,7 +5,7 @@ import {dashboardPayload,serializeForScript} from './fixture.mjs';
 import Button from '@nightjar/button';
 import DashboardNav from './DashboardNav.astro';
 import {peerDashboardURL} from './peer.mjs';
-const family=process.env.NIGHTJAR_FAMILY;
+const family='martlet'; // Native starter identity; no external build environment is required.
 const {base,page} = Astro.props;
 const href=url=>url.startsWith('/')&&!url.startsWith('//')?`${base.replace(/\/$/,'')}${url}`:url;
 const peer=peerDashboardURL(process.env.NIGHTJAR_PEER_URL,'analytics');

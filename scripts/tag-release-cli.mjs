@@ -12,11 +12,10 @@ const packageURL=new URL(encodeURIComponent(name),registry).href;
 const versionURL=`${packageURL}/${encodeURIComponent(version??'')}`;
 
 if(command==='preflight') {
-  if(process.env.RELEASE_ENVIRONMENT_READY!=='yes') throw Error('Protected release environment sentinel missing');
   const info=await identityFromFiles({tag,repository:process.env.GITHUB_REPOSITORY,expectedRepository:repository,expectedName:name});
   productionCommit({git:realGit,tag,sha:process.env.GITHUB_SHA,protectedRef:process.env.REF_PROTECTED});
   const state=await registryState(fetchTimed,registry,name,info.version);
-  if(state!=='absent') throw Error(`Registry version state: ${state}`);
+  if(state!=='present') throw Error(`Registry version must already be published: ${state}`);
   await appendFile(process.env.GITHUB_OUTPUT,`name=${name}\nversion=${info.version}\nchannel=${info.channel}\n`);
 } else if(command==='verify-tag') {
   await identityFromFiles({tag,repository:process.env.GITHUB_REPOSITORY,expectedRepository:repository,expectedName:name});

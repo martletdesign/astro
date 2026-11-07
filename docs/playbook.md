@@ -4,12 +4,12 @@
 
 | Repository | Responsibility |
 | --- | --- |
-| `martlettheme/npm` | Authoritative JSON, color roles, typography roles, layout dimensions, shape, depth, motion, optional CSS and font dependencies |
-| `martlettheme/astro` | Reusable document shell and Astro components; neutral starter |
+| `martletdesign/core` | Authoritative JSON, color roles, typography roles, layout dimensions, shape, depth, motion, optional CSS and font dependencies |
+| `martletdesign/astro` | Reusable document shell and Astro components; neutral starter |
 | `k3jph/k3jph.github.io` | Personal content, branding, navigation, metadata, consent, seasonal behavior, and page composition |
-| `martlettheme/martlettheme` | Theme demonstrations and application-specific port generators; consumes the core |
+| `martletdesign/core` | Theme demonstrations and application-specific port generators; consumes the core |
 
-The npm package names are `@martlet/theme` and `@martlet/astro`. GitHub ownership and npm scope are independent.
+The npm package names are `@martlet/core` and `@martlet/astro`. GitHub ownership and npm scope are independent.
 
 ## 1. Audit the originating site
 
@@ -50,3 +50,7 @@ Replace local design literals with references to the package. An optional alias 
 ## 6. Repeat for Krigsvold
 
 Keep the same ownership and package boundaries, but extract its own design. Migrate krigsvold.org from Jekyll only after the Martlet consumers are verified. Preserve existing URLs and content as a separate migration requirement. No Krigsvold repository is changed during the Martlet pilot.
+
+## Current publication authority
+
+The Core integration shipped in Astro 2.0.0. Local tarballs remain useful for candidate verification; they are not required for ordinary installation. Keep original extraction decisions above as historical rationale. Use the [current release procedure](releasing.md) and canonical GitFlow acceptance; do not reconstruct historical reviews or CI in deployment.

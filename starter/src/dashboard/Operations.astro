@@ -10,7 +10,7 @@ import './operations.css';
 import './dashboard-integration.css';
 import martletCSS from './operations-martlet.css?raw';
 import krigsvoldCSS from './operations-krigsvold.css?raw';
-const family=process.env.NIGHTJAR_FAMILY;
+const family='martlet'; // Native starter identity; no external build environment is required.
 const {href,page}=Astro.props;
 const peer=peerDashboardURL(process.env.NIGHTJAR_PEER_URL,'operations');
 const peerFamily=family==='martlet'?'Krigsvold':'Martlet';
