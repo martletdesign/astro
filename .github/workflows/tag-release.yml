@@ -1,4 +1,4 @@
-name: Tag-driven Astro release (disabled proposal)
+name: Complete published Astro source release
 on:
   push:
     tags: ['v*']
@@ -8,25 +8,14 @@ concurrency:
   group: astro-tag-release-${{ github.repository }}
   cancel-in-progress: false
 jobs:
-  verify:
-    if: ${{ false }}
-    uses: ./.github/workflows/verify.yml
-  docs:
-    if: ${{ false }}
-    uses: ./.github/workflows/docs-archive.yml
   release:
-    needs: [verify, docs]
-    # Separate authorization and review of controls are required to enable.
-    if: ${{ false }}
     runs-on: ubuntu-latest
-    environment: astro-production-release
+    timeout-minutes: 15
     permissions:
       contents: write
-      id-token: write
     env:
       RELEASE_TAG: ${{ github.ref_name }}
       REF_PROTECTED: ${{ github.ref_protected }}
-      RELEASE_ENVIRONMENT_READY: ${{ vars.ASTRO_RELEASE_ENVIRONMENT_READY }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -36,11 +25,14 @@ jobs:
         with:
           node-version: '24.19.0'
       - run: npm install --global npm@11.15.0 --ignore-scripts
-      - name: Verify protected tag, production history, source identity and registry
+      - name: Verify protected tag, accepted main and already published identity
         id: identity
         run: node scripts/tag-release-cli.mjs preflight
-      - run: npm ci --ignore-scripts --legacy-peer-deps && npm run build --if-present && npm test && git diff --exit-code
-      - name: Export and inspect an isolated publishable archive
+      - name: Require definite absence of this GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/github-release-absent.mjs
+      - name: Reproduce the exact normalized package archive
         run: |
           set -euo pipefail
           umask 077
@@ -49,21 +41,9 @@ jobs:
           node -e 'const fs=require("fs"),p=process.argv[1],v=JSON.parse(fs.readFileSync(p));if(v.private!==true)process.exit(1);v.private=false;fs.writeFileSync(p,JSON.stringify(v,null,2)+"\n")' "$RUNNER_TEMP/astro-src/package.json"
           (cd "$RUNNER_TEMP/astro-src" && npm pack --ignore-scripts --pack-destination "$RUNNER_TEMP/astro-out")
           node scripts/tag-release-cli.mjs inspect "$RUNNER_TEMP/astro-out/martlet-astro-${{ steps.identity.outputs.version }}.tgz"
-      - name: Build the exact-core versioned documentation snapshot
-        run: node scripts/docs-versions/build-release.mjs
-      - name: Require independently verified immutable archive publication
-        run: node scripts/docs-versions/verify-published.mjs
-      - name: Recheck tag and version immediately before publication
-        run: node scripts/tag-release-cli.mjs preflight
-      - name: Refuse an existing or unverifiable GitHub Release before npm publication
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: node scripts/github-release-absent.mjs
-      - name: Publish the inspected archive with npm provenance
-        run: npm publish "$RUNNER_TEMP/astro-out/martlet-astro-${{ steps.identity.outputs.version }}.tgz" --access public --tag "${{ steps.identity.outputs.channel }}" --provenance
-      - name: Independently verify registry identity, integrity and bytes
+      - name: Verify registry identity, integrity and exact bytes
         run: node scripts/tag-release-cli.mjs verify-registry "$RUNNER_TEMP/astro-out/martlet-astro-${{ steps.identity.outputs.version }}.tgz"
-      - name: Verify npm signatures and exact release provenance
+      - name: Verify signatures and actual main stage workflow provenance
         env:
           PACKAGE_NAME: ${{ steps.identity.outputs.name }}
           PACKAGE_VERSION: ${{ steps.identity.outputs.version }}
@@ -73,20 +53,32 @@ jobs:
           printf '{"name":"release-verification","version":"0.0.0","private":true}\n' > "$RUNNER_TEMP/provenance-consumer/package.json"
           (cd "$RUNNER_TEMP/provenance-consumer" && npm install --ignore-scripts --legacy-peer-deps --no-audit --no-fund --save-exact "$PACKAGE_NAME@$PACKAGE_VERSION" && npm audit signatures --json --include-attestations > "$RUNNER_TEMP/provenance-audit.json")
           node scripts/tag-release-cli.mjs verify-provenance "$RUNNER_TEMP/provenance-audit.json" "$RUNNER_TEMP/astro-out/martlet-astro-${{ steps.identity.outputs.version }}.tgz"
-      - name: Recheck tag before release creation
-        run: node scripts/tag-release-cli.mjs verify-tag
-      - name: Recheck release absence immediately before creation
+      - name: Recheck protected tag and definite release absence
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node scripts/github-release-absent.mjs
-      - name: Create GitHub Release after registry verification
+        run: |
+          node scripts/tag-release-cli.mjs verify-tag
+          node scripts/github-release-absent.mjs
+      - name: Create source Release from verified published bytes
         env:
           GH_TOKEN: ${{ github.token }}
           CHANNEL: ${{ steps.identity.outputs.channel }}
         run: |
           set -euo pipefail
-          if [ "$CHANNEL" = next ]; then
-            gh release create "$RELEASE_TAG" --verify-tag --generate-notes --prerelease
-          else
-            gh release create "$RELEASE_TAG" --verify-tag --generate-notes
-          fi
+          cd "$RUNNER_TEMP/astro-out"
+          sha256sum martlet-astro-${{ steps.identity.outputs.version }}.tgz > SHA256SUMS
+          args=("$RELEASE_TAG" "martlet-astro-${{ steps.identity.outputs.version }}.tgz" SHA256SUMS --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes)
+          if [ "$CHANNEL" = next ]; then args+=(--prerelease); fi
+          gh release create "${args[@]}"
+      - name: Verify public source release downloads
+        run: |
+          set -euo pipefail
+          mkdir "$RUNNER_TEMP/public-downloads"
+          cd "$RUNNER_TEMP/public-downloads"
+          origin="https://github.com/$GITHUB_REPOSITORY/releases/download/$RELEASE_TAG"
+          archive="martlet-astro-${{ steps.identity.outputs.version }}.tgz"
+          for asset in "$archive" SHA256SUMS; do
+            curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' --connect-timeout 10 --max-time 60 "$origin/$asset" --output "$asset"
+            cmp "$asset" "$RUNNER_TEMP/astro-out/$asset"
+          done
+          sha256sum --check SHA256SUMS

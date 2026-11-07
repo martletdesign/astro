@@ -1,27 +1,15 @@
-# Automated npm releases
+# Staged npm publication and source releases
 
-GitHub Actions publishes GitHub releases through npm trusted publishing (OIDC), using `.github/workflows/publish.yml`. It requires no npm token secret.
+`@martlet/astro@2.0.0` is genuinely published. The source manifest remains `private:true` as an accidental-publication guard; the workflow exports the exact accepted source and changes only that flag before packing.
 
-## One-time npm setup
+## Publication
 
-Open [package settings](https://www.npmjs.com/package/@martlet/astro/access), then Trusted publishing, Add trusted publisher, GitHub Actions. Enter these exact values:
+1. Accept compatible Core changes first, then Astro through `develop` and a release branch into `main`. The canonical GitFlow policy requires one fast check, no human review gate; extended suites are advisory.
+2. Compute the normalized package archive with Node 24.19.0 and npm 11.15.0. Dispatch existing `stage.yml` on `main` with its exact SHA, archive SHA-256 and intended `latest`/`next` tag. It checks current main, exact package identity, genuine publication and integrity of the pinned Core dependency, and Astro registry absence before staging.
+3. The existing trusted publisher is repository `martletdesign/astro`, workflow `stage.yml`, environment `astro-production-release`, **stage-only**. Preserve 2FA. An npm owner approves the genuine stage identity; never approve a bootstrap sentinel. No broad token or direct publication is permitted.
+4. Verify registry version, tarball bytes, signatures and SLSA provenance. Its actual source is the accepted main commit and `stage.yml` dispatched on `refs/heads/main`.
+5. Create the new protected `v` + exact package version tag on eligible main history only after publication and production verification. Never overwrite a tag or release. Existing `tag-release.yml` verifies exact published bytes and provenance and then creates the absent GitHub source Release with the package archive and `SHA256SUMS`. It never publishes to npm.
 
-| Setting | Value |
-| --- | --- |
-| Organization/user | `martlettheme` |
-| Repository | `astro` |
-| Workflow filename | `publish.yml` |
-| Environment | Leave blank |
-| Allowed action | Enable direct `npm publish` |
+Registry uncertainty, provenance mismatch, source mismatch, or an existing GitHub Release fails closed. Repair the cause rather than republishing an existing version. Advanced R2 archival remains disabled and is not a prerequisite for static reference delivery or this source Release.
 
-The workflow must be merged before use. New trusted publisher connections must complete their first publish within two days; otherwise recreate the connection. Existing package maintainers configure this on npm. No npm account settings are changed by this PR.
-
-## Release
-
-1. Merge reviewed version and changelog changes to `main`.
-2. Publish a GitHub pre-release for the experimental channel, or a stable release whose tag is exactly `v` plus `package.json`'s version.
-3. The workflow runs the full verification suite, checks tag/version/repository identity and ancestry in `main`, builds from a fresh install, and publishes to npm. Failed checks prevent publication.
-
-Release core 2.1.0 before Astro 1.1.0, then migrate the demonstration sites to registry versions. The workflow publishes pre-releases to next and stable releases to latest. Verify registry availability before updating consumers. Re-running a successful release fails rather than overwriting an existing npm version. Public repositories produce provenance attestations; private repositories publish with provenance disabled because npm does not support those attestations from private source repositories. Repository visibility is unchanged.
-
-Reference: https://docs.npmjs.com/trusted-publishers/
+See [GitFlow acceptance](https://github.com/k3jph/design-workbench/blob/develop/docs/GITFLOW-ACCEPTANCE.md) and [native delivery](deployment.md).

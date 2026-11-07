@@ -2,7 +2,7 @@
 export function branchAllowed(base, head, sameRepository = true) {
   if (!sameRepository || !head) return false;
   if (base === 'main') return /^(release|hotfix)\/[a-zA-Z0-9][a-zA-Z0-9._/-]*$/.test(head);
-  if (base === 'develop') return head === 'main' || /^(feature|release|hotfix)\/[a-zA-Z0-9][a-zA-Z0-9._/-]*$/.test(head);
+  if (base === 'develop') return head === 'main' || /^(feature|fix|release|hotfix)\/[a-zA-Z0-9][a-zA-Z0-9._/-]*$/.test(head);
   return false;
 }
 

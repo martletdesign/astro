@@ -10,7 +10,7 @@ const env=process.env;
 for(const key of ['DOCS_ARCHIVE_ROOT','DOCS_BASELINE_PATH','DOCS_BASELINE_SHA256','RELEASE_TAG'])if(!env[key])throw Error(`Missing ${key}`);
 const root=process.cwd(),pkg=JSON.parse(await readFile('package.json','utf8')),pin=JSON.parse(await readFile('docs-release-lock.json','utf8'));
 const {version}=parseVersion(pkg.version),family=pin.family;
-if(env.RELEASE_TAG!==`v${version}`||pkg.name!==`@${family}/astro`||pkg.private!==true||!pkg.peerDependencies?.[pin.core.name]||pkg.peerDependencies?.[`@${family}/theme`])throw Error('Documentation requires the matching private core-migration candidate');
+if(env.RELEASE_TAG!==`v${version}`||pkg.name!==`@${family}/astro`||pkg.private!==true||!pkg.peerDependencies?.[pin.core.name]||pkg.peerDependencies?.[`@${family}/theme`])throw Error('Documentation requires the matching Core-integrated source identity');
 if(pin.core.name!==`@${family}/core`||!/^\d+\.\d+\.\d+$/.test(pin.core.version)||!/^\d+\.\d+\.\d+$/.test(pin.astro))throw Error('Documentation dependencies must be exact');
 const baselineBytes=await readFile(env.DOCS_BASELINE_PATH);if(sha256(baselineBytes)!==env.DOCS_BASELINE_SHA256)throw Error('Baseline catalog digest mismatch');
 const baseline=JSON.parse(baselineBytes);if(baseline.family!==family||baseline.framework!=='astro'||baseline.schemaVersion!==1||!Array.isArray(baseline.versions))throw Error('Baseline authority mismatch');

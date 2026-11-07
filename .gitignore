@@ -3,3 +3,5 @@ dist/
 .astro/
 *.tgz
 artifacts/
+.cloudflare-*
+__pycache__/

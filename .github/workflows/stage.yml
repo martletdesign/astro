@@ -47,7 +47,9 @@ jobs:
           test "$(git rev-parse HEAD)" = "$APPROVED_SHA"
           git fetch origin main
           test "$(git rev-parse origin/main)" = "$APPROVED_SHA"
-      - run: npm ci --ignore-scripts --legacy-peer-deps --no-audit --no-fund && npm test
+      - run: npm ci --ignore-scripts --legacy-peer-deps --no-audit --no-fund && npm test && git diff --exit-code
+      - name: Verify the exact Core dependency is published
+        run: node scripts/check-core-publication.mjs
       - name: Export the exact public archive and verify its identity and registry absence
         env:
           EXPECTED_SHA256: ${{ inputs.artifact_sha256 }}
@@ -56,14 +58,20 @@ jobs:
           [[ "$EXPECTED_SHA256" =~ ^[0-9a-f]{64}$ ]]
           mkdir "$RUNNER_TEMP/astro-src" "$RUNNER_TEMP/astro-out"
           git archive HEAD | tar --same-permissions -x -C "$RUNNER_TEMP/astro-src"
-          node -e 'const fs=require("fs"),p=process.argv[1],v=JSON.parse(fs.readFileSync(p));if(v.name!=="@martlet/astro"||v.version!=="2.0.0"||v.private!==true)process.exit(1);v.private=false;fs.writeFileSync(p,JSON.stringify(v,null,2)+"\n")' "$RUNNER_TEMP/astro-src/package.json"
+          node -e 'const fs=require("fs"),p=process.argv[1],v=JSON.parse(fs.readFileSync(p));if(v.name!=="@martlet/astro"||!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(v.version)||v.private!==true)process.exit(1);v.private=false;fs.writeFileSync(p,JSON.stringify(v,null,2)+"\n")' "$RUNNER_TEMP/astro-src/package.json"
+          RELEASE_TAG="v$(node -p 'JSON.parse(require("fs").readFileSync("package.json")).version')" node --input-type=module -e 'import {identityFromFiles} from "./scripts/tag-release-guard.mjs";await identityFromFiles({tag:process.env.RELEASE_TAG,repository:process.env.GITHUB_REPOSITORY,expectedRepository:"martletdesign/astro",expectedName:"@martlet/astro"})'
           (cd "$RUNNER_TEMP/astro-src" && npm pack --ignore-scripts --pack-destination "$RUNNER_TEMP/astro-out")
-          printf '%s  %s\n' "$EXPECTED_SHA256" "$RUNNER_TEMP/astro-out/martlet-astro-2.0.0.tgz" | sha256sum --check
-          node --input-type=module -e 'import {registryState} from "./scripts/tag-release-guard.mjs";const state=await registryState(url=>fetch(url,{signal:AbortSignal.timeout(30000),redirect:"error"}),"https://registry.npmjs.org/","@martlet/astro","2.0.0");if(state!=="absent")throw Error("Version exists or registry identity/absence is unverified; inspect and recover rather than republish")'
+          VERSION=$(node -p 'JSON.parse(require("fs").readFileSync("package.json")).version')
+          printf '%s  %s\n' "$EXPECTED_SHA256" "$RUNNER_TEMP/astro-out/martlet-astro-$VERSION.tgz" | sha256sum --check
+          node --input-type=module -e 'import {registryState} from "./scripts/tag-release-guard.mjs";const state=await registryState(url=>fetch(url,{signal:AbortSignal.timeout(30000),redirect:"error"}),"https://registry.npmjs.org/","@martlet/astro",JSON.parse(await (await import("node:fs/promises")).readFile("package.json","utf8")).version);if(state!=="absent")throw Error("Version exists or registry identity/absence is unverified; inspect and recover rather than republish")'
       - name: Stage reviewed bytes for separately authenticated npm approval
         env:
           NPM_TAG: ${{ inputs.distribution_tag }}
         run: |
           set -euo pipefail
           [[ "$NPM_TAG" = next || "$NPM_TAG" = latest ]]
-          npm stage publish "$RUNNER_TEMP/astro-out/martlet-astro-2.0.0.tgz" --access public --tag "$NPM_TAG" --provenance
+          VERSION=$(node -p 'JSON.parse(require("fs").readFileSync("package.json")).version')
+          git fetch origin main
+          test "$(git rev-parse origin/main)" = "$GITHUB_SHA"
+          RELEASE_TAG="v$VERSION" node scripts/tag-release-cli.mjs confirm-absent
+          npm stage publish "$RUNNER_TEMP/astro-out/martlet-astro-$VERSION.tgz" --access public --tag "$NPM_TAG" --provenance

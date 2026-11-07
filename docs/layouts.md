@@ -13,7 +13,7 @@ The originating site pairs a 16rem documentary index with a 48rem reading column
 
 The core retains its original reading/content/archive widths. New layout variables normalize recurring gaps, a 16rem sidebar, a 30rem minimum main region, a 18rem card minimum, and a 20rem split-panel basis. These are documented defaults, not a claim that every source element used exactly the same values. Martlet's default split is `wide-start`.
 
-Use `@martlet/theme/layout.css` with foundation variables for structural classes; it loads no fonts or palette. `full.css` includes it. `layout.json` and the ESM/CommonJS `layout` export describe defaults and provenance. No existing source value is silently replaced.
+Use `@martlet/core/layout.css` with foundation variables for structural classes; it loads no fonts or palette. `full.css` includes it. `layout.json` and the ESM/CommonJS `layout` export describe defaults and provenance. No existing source value is silently replaced.
 
 Intrinsic wrapping responds to the containing region. Grid `columns` is a maximum, not a promise to fit that many columns at every width. Sidebars use a separate main-content minimum; splits retain DOM order. There is no overflow-hiding workaround. Wide tables belong in a labelled `.martlet-scroll` region with `tabindex="0"` when keyboard scrolling is needed.
 

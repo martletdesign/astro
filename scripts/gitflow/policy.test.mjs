@@ -8,8 +8,10 @@ import {branchAllowed, parseReleaseTag, checkRelease} from './policy.mjs';
 
 test('only approved same-repository sources can target protected branches', () => {
   for (const h of ['release/1.2.3','hotfix/1.2.4']) assert.equal(branchAllowed('main',h),true);
-  for (const h of ['feature/card','release/1.2.3','hotfix/1.2.4','main']) assert.equal(branchAllowed('develop',h),true);
+  for (const h of ['feature/card','fix/card','release/1.2.3','hotfix/1.2.4','main']) assert.equal(branchAllowed('develop',h),true);
   for (const h of ['main','develop','feature/card','fix/card','release/']) assert.equal(branchAllowed('main',h),false);
+  for (const h of ['', 'fix/']) assert.equal(branchAllowed('develop',h),false);
+  assert.equal(branchAllowed('develop','fix/card',false),false);
   assert.equal(branchAllowed('develop','feature/card',false),false);
   assert.equal(branchAllowed('other','feature/card'),false);
 });
