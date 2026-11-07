@@ -20,7 +20,7 @@ try {
   const source=join(temp,'source'),vendor=join(temp,'vendor'),site=join(temp,'site');
   await mkdir(source);await mkdir(vendor);
   const exported=execFileSync('git',['archive',sha],{cwd:root,timeout:30000});
-  execFileSync('tar',['-x','-C',source],{input:exported,timeout:30000});
+  execFileSync('tar',['--same-permissions','-x','-C',source],{input:exported,timeout:30000});
   // Only source private flag changes, matching the staged public archive.
   const manifest=JSON.parse(await readFile(join(source,'package.json'),'utf8'));assert.deepEqual(manifest,pkg);assert.equal(manifest.private,true);manifest.private=false;
   await writeFile(join(source,'package.json'),JSON.stringify(manifest,null,2)+'\n');
