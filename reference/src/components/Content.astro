@@ -18,7 +18,7 @@ const {page, href, base, Button} = Astro.props;
 <div class="recipe">
   {page.semantic_class === 'article' && <>
     <nav class="example-context" aria-label="Article context"><a href={href('/examples/person/')}>About {page.author}</a> · <a href={href('/examples/archive/')}>All writing</a></nav>
-    <ul class="example-context" aria-label="Article subjects">{page.tags.map(tag => <li><a href={href('/examples/categories/')}>{tag}</a></li>)}</ul>
+    <ul class="example-context recipe-tags" role="list" aria-label="Article subjects">{page.tags.map(tag => <li><a href={href('/examples/categories/')}>{tag}</a></li>)}</ul>
   </>}
   {page.semantic_class === 'event' && <aside aria-label="Event details"><p><strong>Event details</strong></p><p>{isValidEventDateTime(page.event.start)?<time datetime={page.event.start}>{page.event.display_start}</time>:<span>{page.event.display_start} (invalid start time)</span>} to {isValidEventDateTime(page.event.end)?<time datetime={page.event.end}>{page.event.display_end}</time>:<span>{page.event.display_end} (invalid end time)</span>} · {page.event.timezone}</p>{isEventEndBeforeStart(page.event.start,page.event.end) && <p>Event end is earlier than its start. Check the event times.</p>}<p>{page.event.location} · {page.event.registration}</p></aside>}
   {page.semantic_class === 'catalog-index' && <Catalog href={href} />}
@@ -53,6 +53,6 @@ const {page, href, base, Button} = Astro.props;
 <style>
 .recipe{min-width:0;overflow-wrap:anywhere}.example-cards{list-style:none;padding:0}.example-actions{list-style:none;padding:0}
 .recipe figure{margin-inline:0}.recipe figure img{max-width:100%;height:auto}
-.recipe-tags{display:flex;flex-wrap:wrap;gap:1rem;list-style:none;padding:0}
+.recipe-tags{display:flex;flex-wrap:wrap;gap:1rem;list-style:none;padding-inline-start:0}
 @media print{[data-list-item][hidden]{display:list-item!important}[data-pagination]{display:none!important}}
 </style>
