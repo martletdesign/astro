@@ -11,7 +11,7 @@ const root=process.cwd();
 const output=join(root,'.cloudflare-site');
 const head=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
 const branch=process.env.WORKERS_CI_BRANCH || process.env.ASTRO_DEPLOY_BRANCH;
-assert.equal(branch,'develop','Only accepted develop may build the neutral reference preview');
+assert.ok(branch==='develop'||/^(feature|fix|hotfix|release)\//.test(branch),'Only development and candidate previews can build this specimen');
 execFileSync('git',['diff','--quiet','HEAD'],{cwd:root});
 try {await stat(output);throw Error('Never reuse a previous Cloudflare output');}
 catch(error) {if(error.code!=='ENOENT')throw error;}
