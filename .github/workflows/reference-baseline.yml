@@ -1,0 +1,39 @@
+name: Canonical Astro baseline build (advisory)
+on:
+  pull_request:
+    branches: [develop]
+    paths:
+      - 'reference-baseline/**'
+      - 'scripts/deployment/build-neutral-baseline.mjs'
+      - 'scripts/deployment/build-cloudflare.sh'
+      - 'scripts/deployment/artifact.py'
+      - '.github/workflows/reference-baseline.yml'
+permissions:
+  contents: read
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build actual Cloudflare preview payload from neutral source
+        env:
+          ASTRO_DEPLOY_BRANCH: develop
+          CANONICAL_SOURCE_REPO: k3jph/k3jph.github.io
+          CANONICAL_SOURCE_SHA: d52c7193ea9090ed11fdc8b3f2fd454c0e77d50c
+        run: node scripts/deployment/build-neutral-baseline.mjs
+      - name: Check representative routes and Cloudflare static payload
+        env:
+          ASTRO_DEPLOY_BRANCH: develop
+        run: |
+          set -eu
+          test -s .cloudflare-site/index.html
+          test -s .cloudflare-site/article/index.html
+          test -s .cloudflare-site/document/index.html
+          python3 scripts/deployment/artifact.py finalize --branch develop --sha "$(git rev-parse HEAD)" --directory .cloudflare-site
+          python3 scripts/deployment/artifact.py verify-artifact --branch develop --sha "$(git rev-parse HEAD)" --directory .cloudflare-site

@@ -1,6 +1,6 @@
 # Martlet canonical Astro source baseline (content neutral)
 
-This **source specimen**, not the deployable public reference application, starts from the real Astro implementation of `jameshoward.us`. It is deliberately isolated from the `starter/` project and current Cloudflare deployment configuration.
+This **source specimen**, not the deployable public reference application, starts from the real Astro implementation of `jameshoward.us`. It is isolated from the `starter/` project. Once integrated into `develop`, the existing Cloudflare development preview builds this specimen; `main` remains on the pre-existing release build.
 
 Origin repository: `k3jph/k3jph.github.io`. Pinned origin commit: `d52c7193ea9090ed11fdc8b3f2fd454c0e77d50c`.
 
@@ -31,3 +31,7 @@ Source blobs: {
   "markdown": "b2a59591c8f9485f625f1771dc94073b2e25c265",
   "home": "45d09a88d7339687309a88f3421bb9f6c777a2fe"
 }
+
+## Cloudflare preview
+
+The accepted `develop` build uses `scripts/deployment/build-neutral-baseline.mjs` to serve this specimen at the existing preview Worker (no custom production domain, no npm publication). The `main` builder remains unchanged. Candidate feature branches do not deploy. An advisory PR check builds the actual payload before integration; the existing Cloudflare Git connection must then run on `develop`. No live Cloudflare deployment is claimed by PR CI alone.

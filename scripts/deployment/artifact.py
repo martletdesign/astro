@@ -103,14 +103,23 @@ def finalize(c, branch, sha, destination):
     subprocess.run(['git','diff','--quiet','HEAD'],cwd=ROOT,check=True,timeout=30)
     provenance=json.loads((ROOT/'.cloudflare-build-provenance.json').read_text())
     assert provenance['sourceCommit']==sha and provenance['family']==c['family']
-    assert provenance['core']==json.loads((ROOT/'docs-release-lock.json').read_text())['core']
+    if provenance.get('buildMode')=='canonical-source-baseline':
+        assert branch=='develop','Source-derived baseline is never a production artifact'
+        assert provenance['core'] is None
+        assert provenance['package']['name']==c['family']+'-source-neutral-baseline'
+        assert provenance['package']['version'] is None
+        assert provenance['baseline']['repository']=='k3jph/k3jph.github.io'
+        assert provenance['baseline']['commit']=='d52c7193ea9090ed11fdc8b3f2fd454c0e77d50c'
+    else:
+        assert provenance.get('buildMode') is None
+        assert provenance['core']==json.loads((ROOT/'docs-release-lock.json').read_text())['core']
     headers='/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n  Cache-Control: public, no-transform\n'
     if branch=='develop':
         headers+='  X-Robots-Tag: noindex, nofollow, noarchive\n'
         (destination/'robots.txt').write_text('User-agent: *\nDisallow: /\n')
     (destination/'_headers').write_text(headers)
     files=inventory(destination);artifact_sha=digest(json_bytes(files))
-    metadata={'schemaVersion':1,'family':c['family'],'framework':'astro','repository':c['repository'],'branch':branch,'sourceCommit':sha,'sourceTree':subprocess.check_output(['git','rev-parse',sha+'^{tree}'],cwd=ROOT,text=True).strip(),'builtAt':datetime.now(timezone.utc).isoformat(),'artifactSha256':artifact_sha,'package':provenance['package'],'core':provenance['core'],'toolchain':provenance['toolchain'],'worker':c['targets'][branch]['worker'],'url':c['targets'][branch]['origin'],'advancedArchiveEnabled':False,'runtimeBindings':[],'runtimeSecrets':False,'noindex':branch=='develop','deliveryMode':'native-cloudflare-static-assets','manualAccessibilityReviewPassed':False}
+    metadata={'schemaVersion':1,'family':c['family'],'framework':'astro','repository':c['repository'],'branch':branch,'sourceCommit':sha,'sourceTree':subprocess.check_output(['git','rev-parse',sha+'^{tree}'],cwd=ROOT,text=True).strip(),'builtAt':datetime.now(timezone.utc).isoformat(),'artifactSha256':artifact_sha,'package':provenance['package'],'core':provenance['core'],'toolchain':provenance['toolchain'],'worker':c['targets'][branch]['worker'],'url':c['targets'][branch]['origin'],'advancedArchiveEnabled':False,'runtimeBindings':[],'runtimeSecrets':False,'noindex':branch=='develop','deliveryMode':'native-cloudflare-static-assets','manualAccessibilityReviewPassed':False,'buildMode':provenance.get('buildMode','published-reference'),'baseline':provenance.get('baseline')}
     metadata['cloudflareBuild']=cloudflare_build_metadata(branch,sha)
     path=destination/'.well-known/deployment.json';path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(json_bytes(metadata))
     (destination/'deployment-inventory.json').write_bytes(json_bytes({'schemaVersion':1,'artifactSha256':artifact_sha,'files':files}))
@@ -124,6 +133,12 @@ def validate_artifact(c, branch, sha, directory):
     assert m['worker']==c['targets'][branch]['worker'] and m['url']==c['targets'][branch]['origin']
     assert m['advancedArchiveEnabled'] is False and m['runtimeBindings']==[] and m['runtimeSecrets'] is False
     assert m['noindex']==(branch=='develop')
+    if m.get('buildMode')=='canonical-source-baseline':
+        assert branch=='develop' and m.get('core') is None and m['package']['version'] is None
+        assert m.get('baseline',{}).get('repository')=='k3jph/k3jph.github.io'
+        assert m.get('baseline',{}).get('commit')=='d52c7193ea9090ed11fdc8b3f2fd454c0e77d50c'
+    else:
+        assert m.get('buildMode') in (None,'published-reference')
     inv=json.loads((directory/'deployment-inventory.json').read_text())
     assert inv['artifactSha256']==m['artifactSha256']==digest(json_bytes(inv['files']))
     expected={f['path']:f for f in inv['files']}
