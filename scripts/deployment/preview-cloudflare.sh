@@ -13,6 +13,9 @@ case "$branch" in
     python3 scripts/deployment/record-preview.py
     ;;
   feature/*|fix/*|hotfix/*|release/*)
+    if [[ -n "${GITHUB_REPOSITORY:-}" && "$GITHUB_REPOSITORY" != "martletdesign/astro" ]]; then
+      echo 'Unexpected GitHub repository identity for candidate preview' >&2; exit 1
+    fi
     [[ -s .cloudflare-site/index.html && -s .cloudflare-feature-wrangler.json ]] || { echo 'Missing built candidate preview'; exit 1; }
     preview_name=$(node scripts/deployment/feature-preview-config.mjs name "$branch")
     timeout 300s node infra/deployment/node_modules/wrangler/bin/wrangler.js preview --name "$preview_name" --config .cloudflare-feature-wrangler.json --ignore-base-config --message "$sha" --json | tee .cloudflare-preview-result.json
