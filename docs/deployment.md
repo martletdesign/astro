@@ -21,11 +21,13 @@ The build output is `reference/dist/` from the repository root (`dist/` inside t
 | GitHub repository | `martletdesign/astro` |
 | Root directory | `reference` |
 | Build command | `npm run build` |
+| Deploy command (Workers) | `npx wrangler deploy` |
+| Preview command (Workers) | `npx wrangler preview` |
 | Output directory (Pages) | `dist` |
 | Production branch | `main` |
 | Development branch | `develop` |
 
-Cloudflare Workers static hosting may use the standard `npx wrangler deploy` command and the app's `wrangler.json`; preview uploads use `npx wrangler versions upload`. Pages needs no deploy command. The app does not require attestation variables, a custom shell/Python deployment pipeline, reconstructed Git archives, or npm package packing during deployment.
+Cloudflare Workers static hosting may use the standard `npx wrangler deploy` command and the app's `wrangler.json`; preview builds use `npx wrangler preview`. The configuration includes the required empty `previews` block; static assets and compatibility settings stay at the top level. Pages needs no deploy command. The app does not require attestation variables, a custom shell/Python deployment pipeline, reconstructed Git archives, or npm package packing during deployment.
 
 The root package is a component library and intentionally has no website build command. Set Cloudflare's root to `reference`, rather than installing or building the package root.
 
