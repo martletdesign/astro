@@ -1,25 +1,14 @@
 ---
-import { Layout, Button } from '@martlet/astro';
-import '@martlet/core/source-profile.css';
-import './source-shell.css';
-import './martlet-shell.css';
-import SourceHeader from './SourceHeader.astro';
-import SourceFooter from './SourceFooter.astro';
-import SourceMasthead from './SourceMasthead.astro';
-import Content from './Content.astro';
-import mark from '../../jekyll/martlet/assets/mark.svg?url';
-const {page, href, base} = Astro.props;
-const name = 'Northlight Field Institute';
-const links = [{href:href('/examples/home/'),label:'Home',current:page.id==='home'},{href:href('/examples/about/'),label:'About',current:page.id==='about'},{href:href('/examples/archive/'),label:'Archive',current:page.id==='archive'},{href:href('/examples/'),label:'Examples',current:page.id==='index'}];
-const dashboards = ['analytics','administration','operations'].map(id => ({href:href(`/examples/dashboard-${id}/`),label:id[0].toUpperCase()+id.slice(1)}));
+import {Button} from '@martlet/astro';
+import SourceHeader from './SourceHeader.astro';import SourceFooter from './SourceFooter.astro';import SourceMasthead from './SourceMasthead.astro';import Content from './Content.astro';import {heroFor} from '../reference.mjs';
+const {page,href,base,renderContent=true}=Astro.props,hero=heroFor(page),documentFrame=['document','reading'].includes(page.composition),isExample=!!page.semantic_class;
 ---
-<Layout title={page.title} description={page.summary} bodyClass="martlet-source-profile">
-  <link slot="head" rel="icon" type="image/svg+xml" href={mark} />
-  <script is:inline slot="head" define:vars={{family: 'martlet'}}>try { const mode=localStorage.getItem('nightjar-appearance')==='dark'?'dark':'light'; document.documentElement.dataset.appearance=mode;document.documentElement.setAttribute(`data-${family}`,mode); } catch {}</script>
-  <SourceHeader slot="header" name="Martlet examples" home={href('/examples/')} links={links} mark={mark} />
-  {!page.dashboard && <SourceMasthead page={page} />}
-  {!page.dashboard && page.id !== 'home' && <nav class="nightjar-breadcrumb" aria-label="Breadcrumb"><a href={href('/examples/home/')}>Home</a><span aria-hidden="true"> / </span>{page.id !== 'index' && <><a href={href('/examples/')}>Examples</a><span aria-hidden="true"> / </span></>}<span aria-current="page">{page.title}</span></nav>}
-  {!page.dashboard && <Content page={page} href={href} base={base} Button={Button} />}
-  <slot />
-  <SourceFooter slot="footer" name={name} groups={[{label:'Explore',links},{label:'Dashboards',links:dashboards}]} />
-</Layout>
+<!doctype html><html lang="en" data-appearance="light"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>{page.title} · Martlet Astro</title><meta name="description" content={page.summary}/><link rel="icon" href={href('/assets/mark.svg')}/>{['fonts','shell','jekyll','examples','examples-family'].map(name=><link rel="stylesheet" href={href(`/assets/css/${name}.css`)}/>)}<script is:inline>try{document.documentElement.dataset.appearance=localStorage.getItem('design-appearance')==='dark'?'dark':'light'}catch{}</script><slot name="head"/></head>
+<body class:list={['martlet',{'has-panoramic-hero':!!hero.image,'dashboard-page':!!page.dashboard}]} data-martlet="light" data-hero-variant={hero.variant}><a class="skip-link" href="#main">Skip to content</a><SourceHeader home={href('/')} href={href} current={page.id}/><main id="main" tabindex="-1">{!page.dashboard&&<SourceMasthead page={page} href={href}/>}
+{page.dashboard?<slot/>:isExample?<div class:list={['example-root',`example-frame--${page.composition||'landing'}`,{'example-reference-exemplar':['faq','changelog','dashboard-components'].includes(page.id)}]} data-example={page.id} data-semantic-class={page.semantic_class}><div class:list={['example-wrap',{'example-reading':documentFrame}]}>
+{page.id!=='index'&&!page.dashboard&&<nav class="example-breadcrumb" aria-label="Breadcrumb"><a href={href('/')}>Overview</a><span aria-hidden="true">/</span><a href={href('/examples/')}>Examples</a><span aria-hidden="true">/</span><span aria-current="page">{page.semantic_class.replaceAll('-',' ')}</span></nav>}
+<div class:list={{'example-document':page.composition==='document','example-report-layout':page.id==='report'}}>{(documentFrame||page.id==='report')&&<nav class:list={['example-local-index',{'toc':page.id==='article'}]} aria-label={page.id==='report'?'Report sections':'On this page'}><p class="eyebrow">On this page</p><ol>{page.sections.map(section=><li><a href={`#${section.id}`}>{section.title}</a></li>)}</ol></nav>}<div><article aria-labelledby={page.dashboard?undefined:'page-title'}>{renderContent&&!page.dashboard&&<Content page={page} href={href} base={base} Button={Button}/>}<slot/></article></div></div>
+{page.id!=='index'&&!page.dashboard&&<p class="example-port-note">A {page.semantic_class.replaceAll('-',' ')} recipe in Martlet. <a href={href('/examples/integrations/')}>Capabilities and integration boundaries</a> · <a href={href('/examples/')}>All examples</a></p>}
+</div></div>:<section class="section"><div class="container jekyll-document">{page.toc&&<aside class="page-index"><nav class="toc" aria-label="On this page"><h2>On this page</h2><ul>{page.toc.map(item=><li><a href={'#'+item.id}>{item.title}</a></li>)}</ul></nav></aside>}<article class="content editorial-content"><slot/></article></div></section>}
+</main><SourceFooter href={href}/><script is:inline src={href('/assets/js/shell.js')} defer></script><slot name="body-end"/></body></html>
+<style is:global>body.martlet .example-root .recipe{max-width:none;margin:0;padding:0}body.martlet .recipe-local-index{display:none}body.martlet .example-section__body{min-width:0}body.martlet .example-root .example-section h2{margin-top:0}body.martlet .example-frame--reading .example-document{display:contents}</style>

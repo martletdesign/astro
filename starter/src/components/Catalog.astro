@@ -1,29 +1,11 @@
 ---
 import catalog from '../../page-archetypes/content/catalog.json';
 import {supported} from '../supported.mjs';
-const {href} = Astro.props;
-const categories = [...new Set(catalog.pages.map(page => page.category))];
-const slug = value => value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const {href}=Astro.props;
+const categories=[...new Set(catalog.pages.map(page=>page.category))];
+const slug=value=>value.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 ---
-<div class="catalog">
-  <p>One content collection, two independent design languages. Explore {catalog.pages.length} recipes, reusable sections, and local application specimens.</p>
-  <p>{catalog.fixture.notice}</p>
-  {catalog.pages.some(entry=>!supported.includes(entry.id)) && <p>Some examples are not yet available in this Astro preview.</p>}
-  <nav aria-label="Example categories">{categories.map(category => <a href={`#${slug(category)}`}>{category}</a>)}</nav>
-  {categories.map(category => <section aria-labelledby={slug(category)}>
-    <h2 id={slug(category)}>{category}</h2>
-    <ul>{catalog.pages.filter(entry => entry.category === category).map(entry => <li>
-      <p>{entry.semantic_class.replace(/-/g, ' ')}</p>
-      <h3>{supported.includes(entry.id) ? <a href={href(`/examples/${entry.id}/`)}>{entry.title}</a> : <span data-destination={href(`/examples/${entry.id}/`)}>{entry.title}</span>}</h3>
-      <p>{entry.summary}</p>
-      {!supported.includes(entry.id) && <p>Not yet available in this Astro preview.</p>}
-    </li>)}</ul>
-  </section>)}
-  <section aria-labelledby="experimental-applications"><h2 id="experimental-applications">Experimental applications</h2><p><a href={href("/examples/scientific-workspace/")}>Thermal analysis</a> · Explore an illustrative local calculation.</p></section>
-</div>
-<style>
-.catalog { max-width:72rem; margin:auto; padding:0 1.5rem 3rem; }
-.catalog nav { display:flex; flex-wrap:wrap; gap:.75rem; }
-.catalog section { margin-block:2.5rem; }
-.catalog ul { list-style:none; padding:0; display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,17rem),1fr)); gap:1.5rem; }
-</style>
+<div class="example-catalog-intro"><p>One content collection, two independent design languages. Explore {catalog.pages.length} complete recipes, reusable sections, and local application specimens.</p><p class="example-notice">{catalog.fixture.notice}</p></div>
+<nav class="example-category-nav" aria-label="Example categories">{categories.map(category=><a href={'#'+slug(category)}>{category}</a>)}</nav>
+{categories.map(category=><section class="example-section" aria-labelledby={slug(category)}><div class="example-section__label"><h2 id={slug(category)}>{category}</h2></div><div class="example-section__body"><div class="example-cards">{catalog.pages.filter(page=>page.category===category).map(page=><article class="example-card"><p class="example-help">{page.semantic_class.replaceAll('-',' ').replace(/^./,letter=>letter.toUpperCase())}</p><h3>{supported.includes(page.id)?<a href={href('/examples/'+page.id+'/')}>{page.title}</a>:<span>{page.title} (not yet available in this Astro preview)</span>}</h3><p>{page.summary}</p></article>)}</div></div></section>)}
+<section class="example-section" aria-labelledby="experimental-applications"><div class="example-section__label"><h2 id="experimental-applications">Experimental applications</h2></div><div class="example-section__body"><p><a href={href('/examples/scientific-workspace/')}>Thermal analysis</a> · Explore an illustrative local calculation.</p></div></section>

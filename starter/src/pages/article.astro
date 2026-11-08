@@ -1,11 +1,15 @@
 ---
-import { ArticleLayout, SiteHeader, SiteFooter, Stack, TableOfContents } from '@martlet/astro';
+import { ArticleLayout, Stack, TableOfContents } from '@martlet/astro';
 import '@martlet/core/source-profile.css';
 import { localPath } from '../paths';
+import DemoHead from '../components/DemoHead.astro';
+import ReferenceHeader from '../components/SourceHeader.astro';
+import DemoFooter from '../components/DemoFooter.astro';
 ---
-<ArticleLayout title="A clear account of the work" summary="A short introduction gives the reader enough context to begin." eyebrow="An example article" sidebarLabel="Related reading" bodyClass="martlet-source-profile">
-  <meta slot="head" name="example-head" content="forwarded" />
-  <SiteHeader slot="header" home={localPath('/')} name="Your website" links={[{href:localPath('/'),label:'Home'},{href:localPath('/documentation/'),label:'Guide'}]} />
+<ArticleLayout title="A clear account of the work" summary="A short introduction gives the reader enough context to begin." eyebrow="An example article" sidebarLabel="Related reading" bodyClass="martlet-source-profile reference-specimen hero-context--compact">
+  <Fragment slot="head"><DemoHead/><meta name="example-head" content="forwarded"/></Fragment>
+  <ReferenceHeader slot="header" home={localPath('/')} href={localPath}/>
+
   <p slot="metadata">Example author · <time datetime="2026-01-01">January 1, 2026</time></p>
   <TableOfContents slot="contents" items={[{href:'#question',label:'Begin with the question'},{href:'#detail',label:'A closer look',depth:3},{href:'#evidence',label:'Present the evidence'}]} />
   <h2 id="question">Begin with the question</h2><p>Long-form content needs a reliable measure and room for supporting evidence. This article shares its design definitions with the landing page, while giving the prose its own space.</p>
@@ -14,9 +18,6 @@ import { localPath } from '../paths';
   <pre><code>const longExample = 'abcdefghijklmnopqrstuvwxyz'.repeat(20);</code></pre>
   <p><a href={localPath('/documentation/')}>Continue to the documentation example.</a></p>
   <Stack slot="sidebar"><h2>Related reading</h2><p>Supporting context follows the article in both source and narrow layouts.</p><a href={localPath('/layouts/')}>Layout lab</a></Stack>
-  <SiteFooter slot="footer" variant="grouped" groups={['Explore','Resources','Legal'].map(label=>({label,links:[{href:localPath('/documentation/'),label:'Your destination'}]}))}>
-    <p slot="identity"><strong>Your website</strong><br />A description supplied by the host.</p>
-    <p slot="base">Your ownership statement.</p><a slot="base" href={localPath('/')}>Your contact destination</a>
-  </SiteFooter>
+  <DemoFooter slot="footer" href={localPath}/>
   <p slot="body-end" id="body-end-example">End-of-body slot example.</p>
 </ArticleLayout>
