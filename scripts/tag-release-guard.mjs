@@ -3,6 +3,11 @@ import {createHash, timingSafeEqual} from 'node:crypto';
 import {readFile} from 'node:fs/promises';
 import {isDeepStrictEqual} from 'node:util';
 
+export function validPackagePath(path) {
+  return typeof path==='string' && path.startsWith('package/') && !path.includes('\\') &&
+    path.split('/').every(segment=>segment!=='' && segment!=='.' && segment!=='..');
+}
+
 export function releaseVersion(tag) {
   const match=/^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/.exec(tag);
   if (!match || (match[4] && match[4].split('.').some(x=>/^\d+$/.test(x)&&x.length>1&&x.startsWith('0')))) throw Error('Invalid release tag');
