@@ -455,6 +455,9 @@ html[data-appearance] body.martlet .site-header[data-navigation-ready].is-reflow
 /* Pages without a masthead still reserve the fixed header's single-row band.
    Wrapped and no-JavaScript headers already occupy space in normal flow. */
 @media screen {
+  body.martlet.dashboard-page .site-header:not([data-navigation-ready]) {
+    position:relative;
+  }
   body.martlet .site-header[data-navigation-ready]:not(.is-reflowing) + main:not(:has(> .page-intro)) {
     padding-block-start:calc(4.6rem + 1px);
   }
