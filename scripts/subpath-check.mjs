@@ -10,7 +10,7 @@ for(const route of ['', 'article', 'documentation', 'layouts', 'form']) {
 }
 const home=await readFile(join(dist,'index.html'),'utf8');
 for(const route of ['language','examples','setup'])assert.ok(home.includes(`href="${base}${route}/"`),`Canonical homepage links to ${route} beneath ${base}`);
-console.log('Five starter pages retain their links and assets under /preview/.');
+console.log('Five reference app pages retain their links and assets under /preview/.');
 
 // Exercise navigation under the mounted base with and without JavaScript.
 if (process.env.MARTLET_BROWSER === '1' || process.env.KRIGSVOLD_BROWSER === '1') {

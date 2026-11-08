@@ -1,0 +1,76 @@
+---
+import fixture from '../../page-archetypes/content/dashboards.json';
+import {analyticsView as initialAnalyticsView, analyticsCoverageMessage as initialCoverageMessage, dashboardSnapshotLabel, analyticsCalendarIssue} from '../../page-archetypes/jekyll/assets/js/dashboard-model.mjs';
+import {dashboardPayload,serializeForScript} from './fixture.mjs';
+import Button from '@nightjar/button';
+import DashboardNav from './DashboardNav.astro';
+import {peerDashboardURL} from './peer.mjs';
+const family='martlet'; // Native reference identity; no external build environment is required.
+const {base,page} = Astro.props;
+const href=url=>url.startsWith('/')&&!url.startsWith('//')?`${base.replace(/\/$/,'')}${url}`:url;
+const peer=peerDashboardURL(process.env.NIGHTJAR_PEER_URL,'analytics');
+const peerFamily=family==='martlet'?'Krigsvold':'Martlet';
+const variables = Object.entries({ 'a-text':'text','a-muted':'muted','a-bg':'bg','a-panel':'panel','a-line':'line','a-accent':'accent','a-on':'on-accent','a-focus':'focus','a-disabled-bg':'disabled-bg','a-disabled-text':'disabled-text','dash-chart-primary':'chart-1','dash-chart-secondary':'chart-2','dash-warning':'warning','dash-ui-font':'font-sans','ex-muted':'muted' }).map(([name,token])=>`--${name}:var(--${family}-${token})`).join(';');
+const initialView=fixture.analytics.length ? initialAnalyticsView(fixture,{start:'2026-10-22',end:'2026-10-28',category:'All',coverage:{start:'2026-09-03',end:'2026-10-28'}}) : null;
+const initial=initialView?.rows ?? [];
+const initialStatus=initialView?.error || (initialView ? (initialCoverageMessage(initialView) || 'Published source data is shown below.') : 'Published source data is shown below.');
+const json=serializeForScript(dashboardPayload('analytics',fixture));
+const charts=[{id:'sessions',title:'Session trend',description:'Daily sessions across the selected categories.'},{id:'downloads',title:'Download trend',description:'Daily downloads in the selected period.'},{id:'categories',title:'Category comparison',description:'Current sessions versus the preceding period of equal length, when available.'}];
+const chartRows = initialView && !initialView.error ? {sessions: initialView.days.map(day=>[day.date,day.sessions]), downloads: initialView.days.map(day=>[day.date,day.downloads]), categories: initialView.categories.filter(category=>initial.some(row=>row.category===category.name)).map(category=>[category.name,category.sessions,initialView.previousCategories?.find(previous=>previous.name===category.name)?.sessions ?? 'Unavailable'])} : {sessions:[],downloads:[],categories:[]};
+const snapshotLabel=dashboardSnapshotLabel(fixture.as_of);
+const calendarError=analyticsCalendarIssue(fixture);
+const metrics=[['sessions','Sessions'],['downloads','Downloads'],['conversion','Completion rate'],['mean_duration','Mean session duration']];
+---
+<div class="analytics-app" data-analytics-dashboard data-family={family === "martlet" ? "m" : "k"} style={variables}>
+  <DashboardNav href={href} current="analytics" />
+  <div class="analytics-main">
+    <header class="dashboard-heading"><p class="eyebrow">{page.category}</p><h1>{page.title}</h1><p>{page.summary}</p></header>
+    <p>Snapshot: {snapshotLabel ? <time datetime={fixture.as_of}>{snapshotLabel}</time> : <span>Invalid snapshot timestamp</span>} {peer && <a data-analytics-compare href={peer}>Compare in {peerFamily}</a>}</p>
+    <p class="analytics-notice">Synthetic demonstration data. Changes remain in this page’s memory and reset on reload. No live people, systems, or services are connected.</p>
+    {fixture.analytics.length === 0 ? <p role="status" data-analytics-empty>No analytics data is available in this snapshot.</p> : calendarError ? <p role="status" data-analytics-calendar-error>{calendarError}</p> : <>
+    <form id="analytics-filters" novalidate><fieldset disabled data-analytics-controls><legend>Analytics filters</legend><div class="analytics-controls">
+      <div><label for="analytics-range">Date range</label><select id="analytics-range" name="range"><option value="7">Last 7 days</option><option value="14">Last 14 days</option><option value="28">Last 28 days</option><option value="custom">Custom range</option></select></div>
+      <div><label for="analytics-start">Start date</label><input id="analytics-start" name="start" type="date" min="2026-09-03" max="2026-10-28" value="2026-10-22" required /></div>
+      <div><label for="analytics-end">End date</label><input id="analytics-end" name="end" type="date" min="2026-09-03" max="2026-10-28" value="2026-10-28" required /></div>
+      <div><label for="analytics-category">Category</label><select id="analytics-category" name="category"><option value="">All categories</option>{[...new Set(fixture.categories)].map(category=><option value={category}>{category}</option>)}</select></div>
+    </div><Button type="submit">Apply filters</Button><Button type="button" data-export-analytics>Download filtered CSV</Button></fieldset><p id="analytics-error" role="alert" hidden></p></form>
+<p data-dashboard-fallback>Interactive dashboard controls are unavailable. Reload to try again.</p>
+    <p role="status" data-analytics-status data-analytics-data-error={initialView?.dataError ? true : undefined}>{initialStatus}</p>
+    <dl class="analytics-metrics" aria-label="Analytics summary">{metrics.map(([id,label])=><div><dt>{label}</dt><dd><output data-metric={id}>—</output><p data-comparison={id}>{initialView?.dataError ? 'Unavailable until a safe range is selected.' : 'Calculated from the table below.'}</p></dd></div>)}</dl>
+    <div class="analytics-charts">{charts.map(chart=><figure class:list={['analytics-chart',`analytics-chart--${chart.id}`]} aria-labelledby={`${chart.id}-title`}><header><h2 id={`${chart.id}-title`}>{chart.title}</h2><p>{chart.description}</p></header><div class="dash-chart__plot" data-chart={chart.id}></div><figcaption data-chart-summary={chart.id}>The data table provides an alternative to the chart.</figcaption><details><summary>View {chart.title.toLowerCase()} data</summary><div class="analytics-table" role="region" aria-label={`${chart.title} data`} tabindex="0"><table data-chart-table={chart.id}><caption>{chart.title} — synthetic data</caption><thead><tr>{chart.id==='categories' ? <><th scope="col">Category</th><th scope="col">Current sessions</th><th scope="col">Previous sessions</th></> : <><th scope="col">Label</th><th scope="col">{chart.id==='sessions'?'Sessions':'Downloads'}</th></>}</tr></thead><tbody>{chartRows[chart.id].length ? chartRows[chart.id].map(row=><tr><th scope="row">{row[0]}</th>{row.slice(1).map(value=><td>{value}</td>)}</tr>) : <tr><td colspan={chart.id==='categories'?3:2}>{initialView?.dataError ? 'Chart values are unavailable until a safe range is selected.' : 'No observations are available for this chart.'}</td></tr>}</tbody></table></div></details></figure>)}</div>
+    <section aria-labelledby="analytics-source-title"><h2 id="analytics-source-title">Analytics source records</h2><p>Counts are synthetic. Completion rate = completed tasks ÷ sessions; mean duration is weighted by session count.</p><div class="analytics-table" role="region" aria-label="Analytics source records table" tabindex="0"><table id="analytics-source"><caption>Selected source records — dates and categories</caption><thead><tr><th scope="col">Date</th><th scope="col">Category</th><th scope="col">Sessions</th><th scope="col">Downloads</th><th scope="col">Completed tasks</th></tr></thead><tbody>{initial.map(row=><tr><th scope="row">{row.date}</th><td>{row.category}</td><td>{row.sessions}</td><td>{row.downloads}</td><td>{row.completions}</td></tr>)}</tbody></table></div></section>
+    <noscript><p>{initialView?.dataError ? 'JavaScript is required to choose a different range.' : 'Interactive filtering and charts require JavaScript. The published data table remains available; controls are disabled.'}</p></noscript>
+    </>}
+  </div>
+</div>
+<script type="application/json" id="analytics-data" is:inline set:html={json}></script>
+<script>
+const fixture=JSON.parse(document.getElementById('analytics-data').textContent);
+import {analyticsView, dayMillis, comparisonSearch, analyticsCoverageMessage, analyticsComparison} from '../../page-archetypes/jekyll/assets/js/dashboard-model.mjs';
+import {chart, metric, tableRows, downloadCSV} from '../../page-archetypes/jekyll/assets/js/dashboard-ui.mjs';
+const root=document.querySelector('[data-analytics-dashboard]');
+const toggle=root.querySelector('.dash-nav-toggle');const navigation=root.querySelector('#dashboard-nav');
+toggle.addEventListener('click',()=>toggle.setAttribute('aria-expanded',String(toggle.getAttribute('aria-expanded')!=='true')));navigation.parentElement.addEventListener('keydown',event=>{if(event.key==='Escape'){toggle.setAttribute('aria-expanded','false');toggle.focus();}});toggle.hidden=false;root.dataset.ready='true';
+if(root.querySelector('#analytics-filters') && root.querySelector('[data-dashboard-fallback]')){
+const form=root.querySelector('#analytics-filters');const fallback=root.querySelector('[data-dashboard-fallback]');
+const start=form.elements.start,end=form.elements.end,category=form.elements.category,range=form.elements.range;const coverage={start:start.min,end:end.max};
+const params=new URL(location.href).searchParams;
+start.value=params.get('start')||start.value;end.value=params.get('end')||end.value;const requestedCategory=params.has('categoryId')?params.get('categoryId'):(params.get('category')==='All'?'':params.get('category')||'');if(fixture.categories.includes(requestedCategory))category.value=requestedCategory;if(params.has('start')||params.has('end'))range.value='custom';
+const status=root.querySelector('[data-analytics-status]');let view,initializing=true;
+const number=value=>new Intl.NumberFormat('en-US').format(value);
+range.addEventListener('change',()=>{if(range.value!=='custom'){end.value='2026-10-28';start.value=new Date(Date.parse(end.value)-(Number(range.value)-1)*dayMillis).toISOString().slice(0,10);}});
+[start,end].forEach(input=>input.addEventListener('input',()=>{range.value='custom';}));
+function render(){
+  const candidate=analyticsView(fixture,{start:start.value,end:end.value,category:category.value||'All',categoryId:category.value==='All'?'All':null,coverage});const error=root.querySelector('#analytics-error');
+  error.hidden=!candidate.error;error.textContent=candidate.error;start.setAttribute('aria-invalid',String(!!candidate.error&&!candidate.dataError));end.setAttribute('aria-invalid',String(!!candidate.error&&!candidate.dataError));for(const field of [start,end]){if(candidate.error&&!candidate.dataError)field.setAttribute('aria-describedby','analytics-error');else field.removeAttribute('aria-describedby');}root.querySelector('[data-export-analytics]').disabled=!!candidate.error;
+  if(candidate.error){status.textContent=candidate.dataError?(view?'Analytics data is unavailable for this range. The previous valid results remain visible.':candidate.error):(view?'Invalid filters. The previous valid results remain visible.':'Invalid filters. No valid results are available.');if(candidate.dataError)status.setAttribute('data-analytics-data-error','');else status.removeAttribute('data-analytics-data-error');error.tabIndex=-1;error.focus();return;}
+  status.removeAttribute('data-analytics-data-error');const url=new URL(location.href);for(const [key,value] of Object.entries({start:start.value,end:end.value,category:category.value||'All'}))url.searchParams.set(key,value);if(category.value==='All')url.searchParams.set('categoryId','All');else url.searchParams.delete('categoryId');try{history.replaceState(history.state,'',url);}catch(error){if(initializing)throw error;root.querySelector('[data-export-analytics]').disabled=!view||!view.rows.length;status.textContent=view?'The address could not be updated. Previous results remain visible; your filters are retained. Try again.':'The address could not be updated. No results are available; your filters are retained. Try again.';return;}view=candidate;const compare=root.querySelector('[data-analytics-compare]');if(compare){const peer=new URL(compare.href);peer.search=comparisonSearch('analytics',url.search);compare.href=peer.href;}
+  const hasRows=view.rows.length>0;root.querySelector('[data-export-analytics]').disabled=!hasRows;
+  metric(root,'sessions',hasRows?number(view.totals.sessions):'Unavailable',analyticsComparison(view,'sessions'));metric(root,'downloads',hasRows?number(view.totals.downloads):'Unavailable',analyticsComparison(view,'downloads'));metric(root,'conversion',view.totals.conversion===null?'Unavailable':view.totals.conversion.toFixed(1)+'%',view.totals.conversion===null?'Unavailable without sessions.':'Completed tasks ÷ sessions.');metric(root,'mean_duration',view.totals.mean_duration===null?'Unavailable':Math.round(view.totals.mean_duration)+' s',view.totals.mean_duration===null?'Unavailable without sessions.':'Weighted by session count.');
+  chart(root,'sessions',view.days.map(day=>({label:day.date,value:day.sessions})),{label:'Sessions'});chart(root,'downloads',view.days.map(day=>({label:day.date,value:day.downloads})),{label:'Downloads'});
+  chart(root,'categories',view.categories.filter(row=>view.rows.some(item=>item.category===row.name)).map(row=>({label:row.name,value:row.sessions,previous:view.previousCategories?.find(item=>item.name===row.name)?.sessions??null})),{label:'Sessions by category',bars:true,previous:true});
+  tableRows(root.querySelector('#analytics-source'),view.rows.map(row=>[row.date,row.category,row.sessions,row.downloads,row.completions]),['Date','Category','Sessions','Downloads','Completed tasks']);status.textContent=`${view.days.length} days · category: ${category.value||'All categories'} · ${view.rows.length} source records · ${start.value} to ${end.value}. ${analyticsCoverageMessage(view)}`.trim();
+}
+form.addEventListener('submit',event=>{event.preventDefault();render();});root.querySelector('[data-export-analytics]').addEventListener('click',()=>{if(view)downloadCSV('northlight-analytics.csv',[['Date','Category','Sessions','Downloads','Completed tasks'],...view.rows.map(row=>[row.date,row.category,row.sessions,row.downloads,row.completions])]);});render();initializing=false;form.querySelector('[data-analytics-controls]').disabled=false;fallback.hidden=true;
+}
+</script>

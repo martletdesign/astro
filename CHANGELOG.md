@@ -1,3 +1,9 @@
+# Unreleased
+
+- Separate the full reference application into `reference/` with pinned published npm dependencies and a standard Astro build.
+- Stop shipping the embedded starter; new sites use the independent `astro-starter` repository.
+- Retire custom Cloudflare website build/deployment scripts and archive workflow entry points.
+
 # Changelog
 
 ## 2.0.3

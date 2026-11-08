@@ -78,10 +78,3 @@ test('verified provenance must identify the exact package, tag, workflow and com
   statement.predicate.buildDefinition.externalParameters.workflow.path='.github/workflows/other.yml';
   assert.equal(verifyProvenance({...args,audit:makeAudit(statement)}),false);
 });
-
-test('advanced archive remains disabled without blocking verified source releases',async()=>{
-  const workflow=await readFile('.github/workflows/tag-release.yml','utf8');
-  assert.doesNotMatch(workflow,/docs-archive\.yml|verify-published\.mjs/);
-  const run=spawnSync(process.execPath,['scripts/docs-versions/verify-published.mjs'],{encoding:'utf8'});
-  assert.notEqual(run.status,0);assert.match(run.stderr,/storage and verification are not configured/);
-});

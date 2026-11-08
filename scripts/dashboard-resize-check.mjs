@@ -26,7 +26,7 @@ try{
   console.log(`${engine}: checking ${prefix}examples/${route}/ across repeated mobile/desktop resize`);
   const response=await page.goto(`${origin}${prefix}examples/${route}/`,{waitUntil:'networkidle'});assert.equal(response.status(),200);assert.equal(await page.locator('h1').count(),1);
   if(route!=='dashboard-administration')await page.locator('[data-chart] svg').first().waitFor();
-  // Verify that native family tokens resolve in an ordinary no-env starter.
+  // Verify that native family tokens resolve in an ordinary no-env reference app.
   for(const mode of ['light','dark']){
    await page.evaluate(({family,mode})=>{document.documentElement.setAttribute(`data-${family}`,mode);document.documentElement.dataset.appearance=mode;},{family:'martlet',mode});
    const tokens=await page.locator('[data-dashboard], [data-analytics-dashboard]').first().evaluate((element,family)=>{

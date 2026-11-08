@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {chart} from '../starter/page-archetypes/jekyll/assets/js/dashboard-ui.mjs';
+import {chart} from '../reference/page-archetypes/jekyll/assets/js/dashboard-ui.mjs';
 
 class Node {
  constructor(){this.children=[];this.attributes={};this.textContent='';}

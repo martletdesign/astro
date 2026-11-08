@@ -12,3 +12,10 @@ test('layout leaves identity and optional site behavior to consumers',async()=>{
   assert.doesNotMatch(layout,/jameshoward|google-analytics|favicon|cookie|badge|https?:/i);
   assert.match(layout,/data-martlet=\{mode\}/);
 });
+
+test('npm archive contains the library but no reference or starter application', async()=>{
+  const {execFileSync}=await import('node:child_process');
+  const [archive]=JSON.parse(execFileSync('npm',['pack','--dry-run','--ignore-scripts','--json'],{encoding:'utf8'}));
+  assert.ok(archive.files.some(file=>file.path==='src/index.ts'));
+  assert.ok(archive.files.every(file=>! /^(reference|starter)\//.test(file.path)));
+});
