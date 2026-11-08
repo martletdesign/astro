@@ -8,7 +8,7 @@ const active=url=>current===url;
     <a class="brand" href="/" aria-label="Neutral Martlet home"><img src="/assets/neutral-wordmark.svg" alt="" width="205" height="38"></a>
     <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-nav">Menu</button>
     <nav id="site-nav" aria-label="Primary navigation">
-      <ul>{items.map(item => <li><a href={item.url} class:list={{'is-active-section':active(item.url)}} aria-current={active(item.url)?'page':undefined}>{item.title}</a></li>)}<li><a href="/article/" aria-label="Search" class:list={{'is-active-section':active('/article/')}} aria-current={active('/article/') ? 'page' : undefined}>Search</a></li></ul>
+      <ul>{items.map(item => <li><a href={item.url} class:list={{'is-active-section':active(item.url)}} aria-current={active(item.url)?'page':undefined}>{item.title}</a></li>)}</ul>
     </nav>
   </div>
 </header>
