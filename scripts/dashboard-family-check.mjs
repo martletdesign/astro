@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {join} from 'node:path';
-// Ordinary independently installed starters require no build-only family variable.
+// Ordinary independently installed reference apps require no build-only family variable.
 export async function checkDashboardFamily(directory,family) {
   assert.ok(['martlet','krigsvold'].includes(family));
   for(const kind of ['administration','operations','analytics']) {

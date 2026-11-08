@@ -5,7 +5,7 @@
 | Repository | Responsibility |
 | --- | --- |
 | `martletdesign/core` | Authoritative JSON, color roles, typography roles, layout dimensions, shape, depth, motion, optional CSS and font dependencies |
-| `martletdesign/astro` | Reusable document shell and Astro components; neutral starter |
+| `martletdesign/astro` | Reusable document shell and Astro components; adjacent registry-consumer reference app |
 | `k3jph/k3jph.github.io` | Personal content, branding, navigation, metadata, consent, seasonal behavior, and page composition |
 | `martletdesign/core` | Theme demonstrations and application-specific port generators; consumes the core |
 
@@ -31,7 +31,7 @@ Depend on the core as a peer, with an explicit supported version range. Keep sha
 
 ## 4. Release and migrate in order
 
-Build/test/pack the core, then test/pack the Astro package. Install both actual tarballs together in a neutral starter and in both existing sites. Before registry publication, commit versioned archives under each consumer's `vendor/` and use `file:vendor/...` dependencies with lockfile integrity. They are release snapshots, not editable sources. No build may depend on a sibling checkout or an unpublished registry version.
+Build/test/pack the core, then test/pack the Astro package. Install both actual tarballs together in a neutral starter and in both existing sites. Use local packed tarballs only in temporary development tests. The deployed `reference/` app consumes exact published npm versions and a committed lockfile. Do not vendor development packages into the deployed app.
 
 After publication under the authorized npm scope, switch dependencies to released versions and regenerate lockfiles. Remove vendor archives only after clean installs succeed. Updating packages should be deliberate; do not load a moving main branch or CDN latest URL in production.
 

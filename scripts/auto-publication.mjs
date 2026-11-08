@@ -6,7 +6,6 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {identityFromFiles,registryState,releaseVersion,verifyArchive} from './tag-release-guard.mjs';
-import {assertCleanStarter} from './docs-versions/clean-starter.mjs';
 
 const repository='martletdesign/astro',name='@martlet/astro';
 const shaPattern=/^[a-f0-9]{40}$/;
@@ -21,7 +20,6 @@ export function acceptedMainRun(event,expectedRepository,currentSha) {
 }
 
 export async function normalizedArchive(root,output) {
- await assertCleanStarter(join(root,'starter'));
  const sha=git(root,['rev-parse','HEAD']);
  assert.equal(git(root,['status','--porcelain']),'','Archive source must be clean');
  const source=join(output,'source'),archives=join(output,'archives');
