@@ -22,6 +22,8 @@ addEventListener('DOMContentLoaded',()=>{
 });
 </script>
 <style is:global>
+/* Native choices inherit their form region's ink in both appearances. */
+body.reference-specimen .martlet-form :is(.martlet-radio,.martlet-checkbox) {color:inherit;}
 /* Keep native chrome legible before JavaScript initializes its appearance. */
 html:not([data-appearance]) body.reference-specimen .site-header,html:not([data-appearance]) body.reference-specimen .site-header nav {background:#25170b;}
 html:not([data-appearance]) body.reference-specimen .site-header :is(.brand,nav a,.menu-button,.appearance-toggle) {color:#f8f4e9;}
