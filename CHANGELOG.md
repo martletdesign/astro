@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.0.2
+
+- Replace the generic starter shell with native Astro compositions following the accepted Martlet Jekyll visual baseline.
+- Include the approved responsive signature and section imagery, image attribution, and compact page mastheads.
+- Give the reference site a real root homepage, with the example catalog kept at `/examples/`.
+- Apply the family’s navigation, typography, colors, footer, and canonical example compositions to the shipped starter and hosted reference.
+- Retain the existing component APIs and the 50 canonical examples’ content and interactions.
+
 ## 2.0.1
 
 - Require Core 2.2.4 so native input placeholders retain readable contrast in both appearances.

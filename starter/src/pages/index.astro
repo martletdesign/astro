@@ -1,16 +1,10 @@
 ---
-import { LandingLayout, SiteHeader, SiteFooter, Section, Grid, Stack, Card, Button, Split, SectionHeading } from '@martlet/astro';
-const links=[{href:localPath('/'),label:'Home',current:true},{href:localPath('/article/'),label:'Article'},{href:localPath('/documentation/'),label:'Documentation'},{href:localPath('/layouts/'),label:'Layout lab'},{href:localPath('/examples/'),label:'Examples'}];
-import { localPath } from '../paths';
+import Shell from '../components/Martlet.astro';import {localPath as href} from '../paths';
+const page={id:'site-home',title:'Martlet, in plain sight.',eyebrow:'The Astro reference',summary:'The same shell. Native Astro components, real examples, and nothing hiding the design.'};
 ---
-<LandingLayout title="Your work, clearly presented." summary="A neutral starting point for a publication, organization, or personal project." eyebrow="A place to begin">
-  <SiteHeader slot="header" home={localPath('/')} name="Your website" links={links} />
-  <Section aria-labelledby="examples"><Stack><SectionHeading title="Choose a composition" id="examples" /><Grid columns={3}>
-    <Card><h3>An article</h3><p>Readable prose with optional supporting material.</p><Button href={localPath('/article/')}>Read the article</Button></Card>
-    <Card><h3>Documentation</h3><p>A guide with navigation before its reading column.</p><Button href={localPath('/documentation/')}>Open the guide</Button></Card>
-    <Card><h3>Structural layouts</h3><p>Responsive arrangements that work within their available space.</p><Button href={localPath('/layouts/')}>Explore layouts</Button></Card>
-  </Grid></Stack></Section>
-  <Section mode="dark" aria-labelledby="appearance"><Split><div><h2 id="appearance">Dark appearance</h2><p>Both modes can coexist. Font roles and structural defaults come from the same core.</p></div><Card slot="secondary"><h3>Native controls</h3><label for="example-name">Name</label><input id="example-name" name="name" autocomplete="name" /><Button disabled>Disabled example</Button></Card></Split></Section>
-  <SiteFooter slot="footer" links={links}><p>Replace this example with your own words and identity.</p></SiteFooter>
-  <Section><h2>Native form pattern</h2><p><Button href={localPath('/form/')}>Try registration, recovery and reset.</Button></p></Section>
-</LandingLayout>
+<Shell page={page} href={href} base={import.meta.env.BASE_URL} renderContent={false}>
+<h2>A smaller engine. The same language.</h2><p>This is a working Astro starter built from the canonical <strong>Martlet reference shell</strong>. Its approved imagery, typography and stylesheet retain the same visible language as the Jekyll reference. Astro supplies native components and routes; the browser receives ordinary HTML.</p>
+<h3>Three compositions to inspect</h3><ul><li><a href={href('/language/')}>The language</a> uses a wide document with a left-hand index.</li><li><a href={href('/examples/article/')}>A field essay</a> uses a narrow reading column, inline contents, date, author, and tags.</li><li><a href={href('/setup/')}>Use this template</a> explains how to build it and replace the content.</li></ul>
+<h2>A shell with a job</h2><p>The masthead holds the title and context. Navigation leads to destinations. An index links within the current document. The footer closes the page. Those relationships survive a different rendering engine.</p><details><summary>A note from the workshop</summary><p>No feet. Excellent footing.</p></details>
+<h2>The complete example library</h2><p><a href={href('/examples/')}>Explore all 50 page recipes</a>: publishing, projects, collections, people, documentation, commerce, events, reports, support, recovery, and application interfaces. The same fictional institute and content appear in both themes.</p><p><a href={href('/examples/integrations/')}>Read about integration boundaries</a> before connecting forms, accounts, devices, or transactions to a live service.</p>
+</Shell>

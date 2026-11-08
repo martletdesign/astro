@@ -1,11 +1,17 @@
 ---
-import { Layout, SiteHeader, SiteFooter, Section, Stack, Button } from '@martlet/astro';
+import { Layout, Section, Stack, Button } from '@martlet/astro';
 import '@martlet/core/source-profile.css';
 import { localPath } from '../paths';
+import DemoHead from '../components/DemoHead.astro';
+import ReferenceHeader from '../components/SourceHeader.astro';
+import ReferenceFooter from '../components/SourceFooter.astro';
+import ReferenceMasthead from '../components/SourceMasthead.astro';
 ---
-<Layout title="Registration example" mainTabindex={-1} bodyClass="martlet-source-profile">
-  <SiteHeader slot="header" home={localPath('/')} name="Example workshop" links={[{href:localPath('/'),label:'Home'},{href:localPath('/form/'),label:'Registration',current:true}]}><Button slot="actions" id="appearance" aria-pressed="false">Dark appearance</Button></SiteHeader>
-  <Section><Stack><h1>Workshop registration</h1><p class="martlet-eyebrow">A native HTML application extension</p>
+<Layout title="Registration example" mainTabindex={-1} bodyClass="martlet-source-profile reference-specimen hero-context--compact">
+  <DemoHead slot="head"/>
+  <ReferenceHeader slot="header" home={localPath('/')} href={localPath}/>
+
+  <ReferenceMasthead page={{id:'form',title:'Workshop registration',heroVariant:'compact'}} href={localPath}/><Section><Stack><p class="martlet-eyebrow">A native HTML application extension</p><p><Button id="appearance" aria-pressed="false">Dark appearance</Button></p>
     <p>This example sends nothing and stores nothing durably. The first valid attempt fails deliberately; retry succeeds.</p>
     <p><Button href="#registration" id="anchor-button">Go to the registration form</Button></p>
     <p id="form-fallback" role="status">Interactive registration is unavailable. Enable JavaScript and reload to use this local example.</p>
@@ -40,6 +46,6 @@ import { localPath } from '../paths';
     </form>
     <dialog id="discard" class="martlet-dialog" aria-labelledby="discard-title"><form method="dialog"><h2 id="discard-title">Discard this registration?</h2><p>Your unsent entries will be cleared.</p><div class="martlet-actions"><Button type="submit" value="keep" autofocus>Keep editing</Button><Button type="submit" value="discard" class="martlet-button--secondary">Discard entries</Button></div></form></dialog>
   </Stack></Section>
-  <SiteFooter slot="footer"><p>Example content. No registration service is connected.</p></SiteFooter>
+  <ReferenceFooter slot="footer" href={localPath}/>
 </Layout>
 <script>import '../scripts/form-demo.js';</script>

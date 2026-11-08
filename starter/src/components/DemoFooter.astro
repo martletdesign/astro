@@ -1,0 +1,9 @@
+---
+import {SiteFooter} from '@martlet/astro';
+const {href}=Astro.props;
+const groups=[{"label": "Build", "links": [{"label": "React reference", "href": "https://react.martletdesign.dev/"}, {"label": "Astro reference", "href": "https://astro.martletdesign.dev/"}, {"label": "Core foundations", "href": "https://martletdesign.dev/design-system/"}, {"label": "Astro source", "href": "https://github.com/martletdesign/astro"}, {"label": "MCP and builder skill", "href": "https://martletdesign.dev/agents/"}]}, {"label": "Elsewhere", "links": [{"label": "James Howard", "href": "https://jameshoward.us/"}, {"label": "Prism 7", "href": "https://prism7.app/"}, {"label": "Krigsvold", "href": "https://krigsvolddesign.dev/"}]}, {"label": "Notices", "links": [{"label": "Privacy Notice", "href": "https://martletdesign.dev/privacy-and-cookie-notice/"}, {"label": "Cookie Settings", "href": "https://martletdesign.dev/privacy-and-cookie-notice/#cookie-settings"}, {"label": "Terms of Use", "href": "https://jameshoward.us/terms-of-use/"}, {"label": "Copyright", "href": "https://jameshoward.us/copyright/"}, {"label": "Design Licensing", "href": "https://martletdesign.dev/privacy-and-cookie-notice/#copyright"}]}];
+---
+<SiteFooter variant="grouped" class="site-footer" groups={groups}>
+ <Fragment slot="identity"><a class="footer-identity" href="https://jameshoward.us/" aria-label="James Howard website"><img src={href('/assets/owner.svg')} alt="" width="56" height="56" loading="lazy"/><span><strong>Martlet Astro</strong><br/>A website of James Howard</span></a></Fragment>
+ <p slot="base">Copyright © 2026 James P. Howard, II</p>
+</SiteFooter>

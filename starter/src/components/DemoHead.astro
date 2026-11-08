@@ -1,0 +1,40 @@
+---
+import {localPath as href} from '../paths';
+---
+<link rel="icon" href={href('/assets/mark.svg')}/>
+{['fonts','shell','jekyll'].map(name=><link rel="stylesheet" href={href(`/assets/css/${name}.css`)}/>)}
+<script is:inline>try{const root=document.documentElement,mode=localStorage.getItem('design-appearance')==='dark'?'dark':'light';root.dataset.appearance=mode;root.dataset.martlet=mode}catch{}</script>
+<script is:inline src={href('/assets/js/shell.js')} defer></script>
+<script is:inline>
+addEventListener('DOMContentLoaded',()=>{
+ const root=document.documentElement;
+ const sync=attribute=>{
+  const mode=root.getAttribute(attribute)==='dark'?'dark':'light';
+  for(const name of ['data-martlet','data-appearance'])if(root.getAttribute(name)!==mode)root.setAttribute(name,mode);
+  document.body.dataset.martlet=mode;
+  const native=document.querySelector('[data-appearance-toggle]');
+  if(native){native.setAttribute('aria-pressed',String(mode==='dark'));native.textContent=mode==='dark'?'Light mode':'Dark mode';}
+  const specimen=document.getElementById('appearance');
+  if(specimen){specimen.setAttribute('aria-pressed',String(mode==='dark'));specimen.textContent=mode==='dark'?'Light appearance':'Dark appearance';}
+ };
+ new MutationObserver(records=>sync(records.at(-1).attributeName)).observe(root,{attributes:true,attributeFilter:['data-martlet','data-appearance']});
+ sync('data-appearance');
+});
+</script>
+<style is:global>
+/* Keep native chrome legible before JavaScript initializes its appearance. */
+html:not([data-appearance]) body.reference-specimen .site-header,html:not([data-appearance]) body.reference-specimen .site-header nav {background:#25170b;}
+html:not([data-appearance]) body.reference-specimen .site-header :is(.brand,nav a,.menu-button,.appearance-toggle) {color:#f8f4e9;}
+html:not([data-appearance]) body.reference-specimen .page-intro {background:#1f140b;}
+html:not([data-appearance]) body.reference-specimen .page-intro :is(h1,p) {color:#f8f4e9;}
+body.reference-specimen .martlet-page-header {padding:calc(4.6rem + 1px + 1.5rem) 0 1.75rem;background:#1f140b;color:var(--color-cream,#f8f4e9);}
+body.reference-specimen .martlet-page-header h1 {max-width:48rem;font-size:clamp(1.5rem,2.4vw,2.25rem);font-weight:400;line-height:1.2;color:inherit;}
+body.reference-specimen .martlet-page-header .martlet-eyebrow {color:var(--color-gold-300,#e6c77d);}
+body.reference-specimen .martlet-page-header__summary {max-width:48rem;font-size:1rem;line-height:1.5;color:inherit;}
+body.reference-specimen .site-header.is-reflowing + main .martlet-page-header {padding-top:1.5rem;}
+body.reference-specimen .martlet-site-footer.site-footer .martlet-site-footer__groups {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(2rem,6vw,5rem);}
+body.reference-specimen .martlet-site-footer.site-footer .martlet-site-footer__base {display:flex;align-items:center;justify-content:space-between;gap:2rem;margin-top:3rem;padding-top:1.5rem;border-top:1px solid rgb(255 255 255/.15);font-size:.82rem;}
+@media(max-width:44rem){body.reference-specimen .martlet-site-footer.site-footer .martlet-site-footer__groups {grid-template-columns:1fr;}body.reference-specimen .martlet-site-footer.site-footer .martlet-site-footer__base {align-items:flex-start;flex-direction:column;}}
+@media(forced-colors:active){body.reference-specimen [class$="-page-header"] {background:Canvas;color:CanvasText;}body.reference-specimen [class$="-page-header"] h1,body.reference-specimen [class$="-page-header"] p {color:CanvasText;}}
+@media print {body.reference-specimen [class$="-page-header"] {padding:1rem 0;background:white;color:black;}}
+</style>
