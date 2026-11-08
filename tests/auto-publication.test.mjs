@@ -5,7 +5,7 @@ import {createHash} from 'node:crypto';
 import {mkdir,mkdtemp,readFile,writeFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {acceptedMainRun,normalizedArchive,dispatchPublication,completePublication,githubClient} from '../scripts/auto-publication.mjs';
+import {acceptedMainRun,normalizedArchive,dispatchPublication,completePublication,githubClient,publishedArchive} from '../scripts/auto-publication.mjs';
 const repository='martletdesign/astro',name='@martlet/astro',repoPath='/repos/'+repository;
 const runEvent=sha=>({repository:{full_name:repository},workflow_run:{name:'Fast acceptance',path:'.github/workflows/acceptance.yml',workflow_id:42,event:'push',conclusion:'success',head_branch:'main',head_sha:sha,repository:{full_name:repository},head_repository:{full_name:repository}}});
 async function fixture(work) {
@@ -109,3 +109,19 @@ test('a conflicting prepublication tag and differing published bytes prevent irr
  const fetcher=async url=>url===metadata.dist.tarball?new Response('wrong',{status:200}):new Response(JSON.stringify(metadata),{status:200});
  const completing=apiFixture(sha);await assert.rejects(completePublication({root,api:completing.api,approvedSha:sha,fetcher}),/differs from accepted source/);assert.equal(completing.calls.some(x=>x.method==='POST'),false);
 }));
+
+test('registry propagation reads are fresh, bounded and visible without treating a deadline as success',async()=>{
+ const bytes=Buffer.from('exact published fixture'),packed={version:'2.0.3',bytes};
+ const metadata={name,version:packed.version,dist:{tarball:'https://registry.npmjs.org/martlet/ready.tgz',integrity:'sha512-'+createHash('sha512').update(bytes).digest('base64')}};
+ let calls=0;const progress=[];
+ const fetcher=async(url,options)=>{
+  assert.equal(options.headers['Cache-Control'],'no-cache');assert.ok(options.signal);
+  calls++;
+  if(calls===1)return new Response('{"error":"Not found"}',{status:404});
+  return url===metadata.dist.tarball?new Response(bytes,{status:200}):new Response(JSON.stringify(metadata),{status:200});
+ };
+ await publishedArchive(fetcher,packed,{delayMs:0,log:event=>progress.push(event)});
+ assert.deepEqual(progress.map(event=>event.state),['start','waiting','start','passed']);assert.equal(calls,3);
+ const timed=[];await assert.rejects(publishedArchive(async()=>new Response('{"error":"Not found"}',{status:404}),packed,{timeoutMs:25,delayMs:1,log:event=>timed.push(event)}),/deadline/);
+ assert.ok(timed.some(event=>event.state==='waiting'));assert.equal(timed.some(event=>event.state==='passed'),false);
+});

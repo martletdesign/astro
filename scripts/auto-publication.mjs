@@ -61,12 +61,13 @@ async function currentMain(api) {
  assert.equal(response.body?.object?.type,'commit');assert.match(response.body.object.sha,shaPattern);
  return response.body.object.sha;
 }
-async function registryBytes(fetcher,packed) {
+async function registryBytes(fetcher,packed,timeoutMs=15000) {
+ const options={headers:{'Cache-Control':'no-cache'},redirect:'error',signal:AbortSignal.timeout(timeoutMs)};
  const url='https://registry.npmjs.org/'+encodeURIComponent(name)+'/'+encodeURIComponent(packed.version);
- const response=await fetcher(url,{redirect:'error',signal:AbortSignal.timeout(15000)});
+ const response=await fetcher(url,options);
  assert.equal(response.status,200);const metadata=await responseJSON(response);
  const target=new URL(metadata.dist?.tarball);assert.equal(target.origin,'https://registry.npmjs.org');assert.equal(target.username+target.password,'');
- const artifact=await fetcher(target.href,{redirect:'error',signal:AbortSignal.timeout(15000)});assert.equal(artifact.status,200);
+ const artifact=await fetcher(target.href,options);assert.equal(artifact.status,200);
  const chunks=[];let size=0;const reader=artifact.body.getReader();
  try {for(;;){const {value,done}=await reader.read();if(done)break;size+=value.byteLength;assert.ok(size<=packed.bytes.length,'Published archive exceeds expected size');chunks.push(Buffer.from(value));}}
  finally {await reader.cancel();}
@@ -109,13 +110,22 @@ export async function releaseTagExists(api,tag,approvedSha) {
  return true;
 }
 
-async function publishedArchive(fetcher,packed) {
- for(let attempt=0;attempt<12;attempt++){
-  try {await registryBytes(fetcher,packed);return;}
-  catch(error){
+export async function publishedArchive(fetcher,packed,{timeoutMs=90000,delayMs=5000,log=event=>console.error(JSON.stringify(event))}={}) {
+ assert.ok(Number.isFinite(timeoutMs)&&timeoutMs>0&&Number.isFinite(delayMs)&&delayMs>=0);
+ const started=Date.now(),deadline=started+timeoutMs;let previous;
+ for(let attempt=1;;attempt++){
+  const remaining=deadline-Date.now();
+  if(remaining<=0)throw Error(`Registry propagation exceeded its ${timeoutMs}ms deadline`,{cause:previous});
+  log({operation:'registry.publication',state:'start',attempt,version:packed.version,elapsedMs:Date.now()-started});
+  try {
+   await registryBytes(fetcher,packed,Math.min(15000,remaining));
+   log({operation:'registry.publication',state:'passed',attempt,version:packed.version,elapsedMs:Date.now()-started});return;
+  }catch(error){
    const transient=error?.actual===404||(typeof error?.actual==='number'&&error.actual>=500)||['TypeError','TimeoutError','AbortError'].includes(error?.name);
-   if(!transient||attempt===11)throw error;
-   await new Promise(done=>setTimeout(done,5000));
+   if(!transient)throw error;
+   previous=error;
+   log({operation:'registry.publication',state:'waiting',attempt,status:error.actual??error.name,version:packed.version,elapsedMs:Date.now()-started});
+   await new Promise(done=>setTimeout(done,Math.min(delayMs,Math.max(0,deadline-Date.now()))));
   }
  }
 }
