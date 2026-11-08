@@ -1,0 +1,16 @@
+{
+  "name": "martlet-source-neutral-baseline",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@martlet/astro": "1.0.0",
+    "@martlet/theme": "2.0.0",
+    "@astrojs/markdown-remark": "7.3.1",
+    "astro": "7.3.2"
+  }
+}

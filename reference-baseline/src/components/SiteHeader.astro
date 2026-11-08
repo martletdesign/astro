@@ -1,0 +1,64 @@
+---
+const current = Astro.url.pathname;
+const items=[{title:'Overview',url:'/'},{title:'Article',url:'/article/'},{title:'Document',url:'/document/'}];
+const active=url=>current===url;
+---
+<header class="site-header" data-site-header>
+  <div class="container header-inner">
+    <a class="brand" href="/" aria-label="Neutral Martlet home"><img src="/assets/neutral-wordmark.svg" alt="" width="205" height="38"></a>
+    <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-nav">Menu</button>
+    <nav id="site-nav" aria-label="Primary navigation">
+      <ul>{items.map(item => <li><a href={item.url} class:list={{'is-active-section':active(item.url)}} aria-current={active(item.url)?'page':undefined}>{item.title}</a></li>)}<li><a href="/article/" aria-label="Search" class:list={{'is-active-section':active('/article/')}} aria-current={active('/article/') ? 'page' : undefined}>Search</a></li></ul>
+    </nav>
+  </div>
+</header>
+<script is:inline>
+  (() => {
+    const header = document.querySelector('[data-site-header]');
+    const button = header?.querySelector('.menu-button');
+    const navigation = header?.querySelector('#site-nav');
+    if (!header || !button || !navigation) return;
+
+    const threshold = () => Math.min(260, Math.max(160, window.innerHeight * .25));
+    const updateHeader = () => header.classList.toggle('is-scrolled', window.scrollY >= threshold());
+    const setMenu = (open) => {
+      button.setAttribute('aria-expanded', String(open));
+      navigation.classList.toggle('is-open', open);
+      header.classList.toggle('is-menu-open', open);
+    };
+    let scheduled = false;
+    const onScroll = () => {
+      if (scheduled) return;
+      scheduled = true;
+      requestAnimationFrame(() => { updateHeader(); scheduled = false; });
+    };
+
+    updateHeader();
+    addEventListener('scroll', onScroll, { passive: true });
+    addEventListener('resize', updateHeader, { passive: true });
+    const finishInitialState = () => {
+      setMenu(false);
+      updateHeader();
+      requestAnimationFrame(() => header.classList.add('is-ready'));
+    };
+    // pageshow also fires when a page returns from the back-forward cache, so
+    // keep this listener for the lifetime of the document.
+    addEventListener('pageshow', finishInitialState);
+    addEventListener('load', finishInitialState, { once: true });
+    addEventListener('hashchange', () => requestAnimationFrame(updateHeader));
+
+    button.addEventListener('click', () => setMenu(button.getAttribute('aria-expanded') !== 'true'));
+    navigation.addEventListener('click', (event) => { if (event.target instanceof Element && event.target.closest('a')) setMenu(false); });
+    addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape' || button.getAttribute('aria-expanded') !== 'true') return;
+      setMenu(false);
+      button.focus();
+    });
+    matchMedia('(max-width: 68rem), (max-aspect-ratio: 4/5)').addEventListener('change', () => setMenu(false));
+  })();
+</script>
+<style>
+  .site-header{position:fixed;z-index:50;top:0;right:0;left:0;border-bottom:1px solid transparent;background:transparent;font-family:var(--font-sans)}.site-header.is-ready{transition:background-color .5s ease,border-color .5s ease,box-shadow .5s ease}.site-header.is-scrolled,.site-header.is-menu-open{border-color:rgb(255 255 255/.13);background:var(--color-navy-950);box-shadow:0 5px 24px rgb(0 0 0/.2)}.header-inner{display:flex;min-height:4.6rem;align-items:center;justify-content:space-between;gap:1.5rem}.brand{display:flex;align-items:center;color:#fff;text-decoration:none}.brand img{display:block;width:min(12.8rem,42vw);height:auto}nav ul{display:flex;align-items:center;gap:1.25rem;margin:0;padding:0;list-style:none}nav a{position:relative;color:#fff;font-size:.86rem;font-weight:700;text-decoration:none}nav a::after{position:absolute;right:0;bottom:-.6rem;left:0;height:2px;transform:scaleX(0);background:var(--color-gold-300);content:'';transition:transform .2s ease}nav a:is([aria-current=page],.is-active-section),nav a:hover{color:var(--color-gold-300)}nav a:is([aria-current=page],.is-active-section)::after,nav a:hover::after{transform:scaleX(1)}.menu-button{display:none;padding:.5rem .75rem;border:1px solid rgb(255 255 255/.52);border-radius:.25rem;color:#fff;background:transparent;font:700 .9rem var(--font-sans)}
+  @media(max-width:68rem),(max-aspect-ratio:4/5){.menu-button{display:block}nav{display:none;position:absolute;top:100%;right:0;left:0;padding:.5rem 1rem 1rem;background:var(--color-navy-950);box-shadow:0 14px 24px rgb(0 0 0/.22)}nav.is-open{display:block;max-height:calc(100dvh - 4.6rem);overflow-y:auto}nav ul{align-items:stretch;flex-direction:column;gap:.25rem}nav a{display:block;padding:.65rem .45rem}nav a::after{right:auto;bottom:.2rem;left:.45rem;width:2.5rem}}
+  @media(prefers-reduced-motion:reduce){.site-header,nav a::after{transition-duration:.01ms}}
+</style>

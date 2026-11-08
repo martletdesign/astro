@@ -1,0 +1,15 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageIntro from '../components/PageIntro.astro';
+---
+<BaseLayout title="A field note · Martlet baseline"><PageIntro title="A field note on evidence" subtitle="A deliberately content-neutral exercise of the original Astro page-intro component." eyebrow="Field notes" compact />
+<section class="article-shell"><div class="container"><article class="content">
+<p class="metadata"><time datetime="2026-10-01">October 1, 2026</time> · Northlight Field Institute (fictional)</p>
+<p>Good reference content varies in length. Short paragraphs, substantial explanations, quotations, and lists must all remain readable without exceptions.</p>
+<div class="toc"><h2>In this article</h2><ol><li><a href="#observations">Observations</a></li><li><a href="#measurements">Measurements</a></li><li><a href="#forms">An interface example</a></li></ol></div>
+<h2 id="observations">Observations in context</h2><p>This paragraph is deliberately long enough to exercise the measure of the reading column, the line height, the colors of inline links, and how the layout responds to browser zoom. Compare it with the originating site before changing any tokens.</p>
+<blockquote><p>The shape of the evidence is as important as the number on the page.</p></blockquote>
+<h2 id="measurements">Measurements and uncertainty</h2><table><thead><tr><th scope="col">Observation</th><th scope="col">Value</th><th scope="col">Interpretation</th></tr></thead><tbody><tr><th scope="row">Sample A</th><td>18.4</td><td>Reference interval</td></tr><tr><th scope="row">Sample B</th><td>21.7</td><td>Illustrative difference</td></tr></tbody></table><pre><code>const readings = [18.4, 21.7];
+const average = readings.reduce((a,b)=>a+b,0)/readings.length;</code></pre>
+<h2 id="forms">An interface example</h2><p>These controls exercise the canonical site's existing form geometry. They do not submit or store data.</p><form onsubmit="return false"><label for="field-observation">Observation label</label><input id="field-observation" name="observation" placeholder="For example, Site A"/><label for="field-type">Category</label><select id="field-type"><option>Research</option><option>Review</option></select><button type="button" class="button">Review the entry</button></form>
+</article></div></section></BaseLayout>

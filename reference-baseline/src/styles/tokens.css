@@ -1,0 +1,2 @@
+/* Compatibility aliases; authoritative definitions live in @martlet/theme. */
+@import '@martlet/theme/legacy.css';

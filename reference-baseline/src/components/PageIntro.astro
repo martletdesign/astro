@@ -1,0 +1,21 @@
+---
+import { renderInlineMarkdown } from '../lib/markdown';
+interface Props { title: string; subtitle?: string; image?: string; compact?: boolean; focal?: string; eyebrow?: string }
+const { title, subtitle, image='/assets/img/header-home.webp', compact=false, focal='center', eyebrow } = Astro.props;
+const subtitleHtml = subtitle ? await renderInlineMarkdown(subtitle) : undefined;
+---
+<header class:list={['page-intro', {'page-intro--compact':compact}]} style={`--hero-image:url('${image}');--hero-focal:${focal}`}>
+  <div class="page-intro__shade"><div class="container page-intro__content">{eyebrow && <p class="eyebrow">{eyebrow}</p>}<h1>{title}</h1>{subtitleHtml && <p set:html={subtitleHtml}/>}</div></div>
+</header>
+<style>
+  .page-intro { background-color: var(--color-navy-950); background-image: var(--hero-image); background-position: var(--hero-focal); background-size: cover; background-blend-mode: luminosity; }
+  .page-intro__shade { display: grid; min-height: clamp(24rem, 38vw, 34rem); align-items: end; padding: clamp(8rem, 12vw, 11rem) 0 clamp(3rem, 6vw, 5rem); background: var(--hero-overlay); }
+  .page-intro--compact .page-intro__shade { min-height: clamp(20rem, 30vw, 27rem); }
+  .page-intro__content { color: var(--color-cream); text-align: left; }
+  .page-intro__content::after { display: block; width: 4rem; height: 2px; margin-top: 1.8rem; background: var(--color-gold-300); content: ''; }
+  .page-intro .eyebrow { color: var(--color-gold-300); }
+  .page-intro h1 { max-width: 66rem; margin: 0; color: var(--color-cream); font-size: clamp(2rem, 5.5vw, 5rem); line-height: 1.08; overflow-wrap: anywhere; }
+  .page-intro p:not(.eyebrow) { max-width: 48rem; margin: 1.25rem 0 0; color: rgb(248 244 233 / 88%); font-size: clamp(1.08rem, 1.6vw, 1.3rem); line-height: 1.6; }
+  .page-intro p a { color: inherit; text-decoration-color: var(--color-gold-300); }
+  @media (max-width: 48rem), (max-aspect-ratio: 4/5) { .page-intro__shade { min-height: 22rem; padding-block: 8rem 3rem; } .page-intro--compact .page-intro__shade { min-height: 20rem; } }
+</style>
