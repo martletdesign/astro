@@ -1,39 +1,26 @@
-name: Canonical Astro baseline build (advisory)
+name: Build cloneable Astro reference
 on:
   pull_request:
     branches: [develop]
     paths:
       - 'reference-baseline/**'
-      - 'scripts/deployment/build-neutral-baseline.mjs'
-      - 'scripts/deployment/build-cloudflare.sh'
-      - 'scripts/deployment/artifact.py'
       - '.github/workflows/reference-baseline.yml'
 permissions:
   contents: read
 jobs:
   baseline:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: reference-baseline
     steps:
       - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Build actual Cloudflare preview payload from neutral source
-        env:
-          ASTRO_DEPLOY_BRANCH: develop
-          CANONICAL_SOURCE_REPO: k3jph/k3jph.github.io
-          CANONICAL_SOURCE_SHA: d52c7193ea9090ed11fdc8b3f2fd454c0e77d50c
-        run: node scripts/deployment/build-neutral-baseline.mjs
-      - name: Check representative routes and Cloudflare static payload
-        env:
-          ASTRO_DEPLOY_BRANCH: develop
-        run: |
-          set -eu
-          test -s .cloudflare-site/index.html
-          test -s .cloudflare-site/article/index.html
-          test -s .cloudflare-site/document/index.html
-          test -s .cloudflare-build-provenance.json
-          grep -q '"buildMode": "canonical-source-baseline"' .cloudflare-build-provenance.json
+          cache: 'npm'
+          cache-dependency-path: 'reference-baseline/package-lock.json'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run build
+      - run: test -s dist/index.html && test -s dist/article/index.html && test -s dist/document/index.html
