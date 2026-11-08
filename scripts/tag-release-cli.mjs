@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {appendFile,readFile} from 'node:fs/promises';
 import {execFileSync} from 'node:child_process';
-import {identityFromFiles,productionCommit,realGit,registryState,verifyArchive,releaseVersion,verifyProvenance} from './tag-release-guard.mjs';
+import {identityFromFiles,productionCommit,realGit,registryState,verifyArchive,releaseVersion,verifyProvenance,validPackagePath} from './tag-release-guard.mjs';
 
 const repository='martletdesign/astro',name='@martlet/astro',registry='https://registry.npmjs.org/';
 const tag=process.env.RELEASE_TAG;
@@ -23,7 +23,7 @@ if(command==='preflight') {
 } else if(command==='inspect') {
   const archive=process.argv[3];
   const files=execFileSync('tar',['-tzf',archive],{encoding:'utf8'}).trim().split('\n');
-  if(!files.every(p=>p.startsWith('package/')&&!p.includes('..')) || !['package/package.json','package/LICENSE','package/README.md','package/src/index.ts'].every(p=>files.includes(p))) throw Error('Unexpected package archive contents');
+  if(!files.every(validPackagePath) || !['package/package.json','package/LICENSE','package/README.md','package/src/index.ts'].every(p=>files.includes(p))) throw Error('Unexpected package archive contents');
   const listing=execFileSync('tar',['-tvzf',archive],{encoding:'utf8'}).trim().split('\n');
   if(!listing.every(line=>line.startsWith('-'))) throw Error('Non-regular entry in package archive');
   const manifest=JSON.parse(execFileSync('tar',['-xOzf',archive,'package/package.json'],{encoding:'utf8'}));

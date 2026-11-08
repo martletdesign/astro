@@ -13,6 +13,11 @@ on:
         type: choice
         options: [next, latest]
         default: next
+      publish_mode:
+        description: Stage for owner approval or publish accepted bytes directly
+        type: choice
+        options: [stage, publish]
+        default: stage
 permissions:
   contents: read
 concurrency:
@@ -20,7 +25,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   stage:
-    # Manual exact-head staging; npm separately enforces trusted-publisher identity.
+    # The same exact-head publisher handles manual staging and automatic publication.
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: astro-production-release
@@ -62,11 +67,14 @@ jobs:
           RELEASE_TAG="v$(node -p 'JSON.parse(require("fs").readFileSync("package.json")).version')" node --input-type=module -e 'import {identityFromFiles} from "./scripts/tag-release-guard.mjs";await identityFromFiles({tag:process.env.RELEASE_TAG,repository:process.env.GITHUB_REPOSITORY,expectedRepository:"martletdesign/astro",expectedName:"@martlet/astro"})'
           (cd "$RUNNER_TEMP/astro-src" && npm pack --ignore-scripts --pack-destination "$RUNNER_TEMP/astro-out")
           VERSION=$(node -p 'JSON.parse(require("fs").readFileSync("package.json")).version')
+          node scripts/tag-release-cli.mjs inspect "$RUNNER_TEMP/astro-out/martlet-astro-$VERSION.tgz"
           printf '%s  %s\n' "$EXPECTED_SHA256" "$RUNNER_TEMP/astro-out/martlet-astro-$VERSION.tgz" | sha256sum --check
           node --input-type=module -e 'import {registryState} from "./scripts/tag-release-guard.mjs";const state=await registryState(url=>fetch(url,{signal:AbortSignal.timeout(30000),redirect:"error"}),"https://registry.npmjs.org/","@martlet/astro",JSON.parse(await (await import("node:fs/promises")).readFile("package.json","utf8")).version);if(state!=="absent")throw Error("Version exists or registry identity/absence is unverified; inspect and recover rather than republish")'
-      - name: Stage reviewed bytes for separately authenticated npm approval
+      - name: Publish or stage the exact verified bytes
         env:
           NPM_TAG: ${{ inputs.distribution_tag }}
+          PUBLISH_MODE: ${{ inputs.publish_mode }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           [[ "$NPM_TAG" = next || "$NPM_TAG" = latest ]]
@@ -74,4 +82,35 @@ jobs:
           git fetch origin main
           test "$(git rev-parse origin/main)" = "$GITHUB_SHA"
           RELEASE_TAG="v$VERSION" node scripts/tag-release-cli.mjs confirm-absent
-          npm stage publish "$RUNNER_TEMP/astro-out/martlet-astro-$VERSION.tgz" --access public --tag "$NPM_TAG" --provenance
+          node scripts/auto-publication.mjs check-tag
+          git fetch origin main
+          test "$(git rev-parse origin/main)" = "$GITHUB_SHA"
+          case "$PUBLISH_MODE" in
+            publish) npm publish "$RUNNER_TEMP/astro-out/martlet-astro-$VERSION.tgz" --access public --tag "$NPM_TAG" --provenance ;;
+            stage) npm stage publish "$RUNNER_TEMP/astro-out/martlet-astro-$VERSION.tgz" --access public --tag "$NPM_TAG" --provenance ;;
+            *) echo 'Unknown publication mode' >&2; exit 1 ;;
+          esac
+
+  complete:
+    if: ${{ needs.stage.result == 'success' && inputs.publish_mode == 'publish' }}
+    needs: stage
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ inputs.approved_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24.19.0'
+      - run: npm install --global npm@11.15.0 --ignore-scripts
+      - name: Create the expected immutable tag and dispatch verified release completion
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APPROVED_SHA: ${{ inputs.approved_sha }}
+        run: node scripts/auto-publication.mjs complete
