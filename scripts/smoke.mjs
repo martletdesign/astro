@@ -25,7 +25,7 @@ try {
   await checkDashboardFamily(join(site,'dist'),'martlet');
   const html=await readFile(join(site,'dist/index.html'),'utf8');
   assert.match(html,/data-martlet="light"/);
-  assert.match(html,/<h1\b[^>]*>Martlet, in plain sight\.<\/h1>/,'The root is the family reference homepage');
+  assert.match(html,/<h1\b[^>]*>Martlet for Astro<\/h1>/,'The root is the family reference homepage');
   assert.match(html,/Martlet Astro/);
   assert.match(html,/data-hero-variant="signature"/);
   assert.match(html,/aria-label="Primary navigation"/);

@@ -12,8 +12,9 @@
 .example-root h2 { font-size: clamp(1.5rem, 2.4vw, 2rem); margin: 0 0 1.25rem; scroll-margin-top: 8rem; }
 .example-root h3 { font-size: 1.2rem; margin: 0 0 .7rem; }
 .example-root p { margin: 0 0 1rem; }
-.example-root a:not(.example-button) { color: var(--ex-link); text-underline-offset: .2em; }
-.example-root a:not(.example-button):hover { text-decoration: underline; }
+/* Native Astro buttons retain their package's label colors in every appearance. */
+.example-root a:not(.example-button, .martlet-button) { color: var(--ex-link); text-underline-offset: .2em; }
+.example-root a:not(.example-button, .martlet-button):hover { text-decoration: underline; }
 .example-root :focus-visible { outline: 3px solid var(--ex-focus); outline-offset: 4px; }
 /* Button appearance belongs to each family's native shell. */
 .example-root .example-button { text-decoration: none; }
@@ -129,7 +130,7 @@ html[data-appearance=dark] .example-local-index .eyebrow { color: var(--ex-link)
   .example-table-scroll { overflow: visible; }
   .example-root table { font-size: 9pt; }
   .example-root :is(th,td) { min-width: 0; padding: .4rem; }
-  .example-root a:not(.example-button) { text-decoration: underline; }
+  .example-root a:not(.example-button, .martlet-button) { text-decoration: underline; }
   .example-root figure { break-inside: avoid; }
 }
 .example-root :is(label, legend) { color: var(--ex-text); }
