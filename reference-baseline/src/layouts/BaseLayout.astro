@@ -1,0 +1,15 @@
+---
+import MartletLayout from '@martlet/astro/Layout.astro';
+import '../styles/global.css';
+import '../styles/content.css';
+import '../styles/document-pages.css';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+const {title='Martlet reference',description='Content-neutral source-derived Astro reference.'}=Astro.props;
+---
+<MartletLayout title={title} description={description}>
+  <meta slot="head" name="robots" content="noindex,nofollow" />
+  <SiteHeader slot="header" />
+  <slot />
+  <SiteFooter slot="footer" />
+</MartletLayout>

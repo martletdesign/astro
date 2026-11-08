@@ -1,0 +1,26 @@
+name: Build cloneable Astro reference
+on:
+  pull_request:
+    branches: [develop]
+    paths:
+      - 'reference-baseline/**'
+      - '.github/workflows/reference-baseline.yml'
+permissions:
+  contents: read
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: reference-baseline
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: 'reference-baseline/package-lock.json'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run build
+      - run: test -s dist/index.html && test -s dist/article/index.html && test -s dist/document/index.html
