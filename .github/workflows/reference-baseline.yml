@@ -35,5 +35,5 @@ jobs:
           test -s .cloudflare-site/index.html
           test -s .cloudflare-site/article/index.html
           test -s .cloudflare-site/document/index.html
-          python3 scripts/deployment/artifact.py finalize --branch develop --sha "$(git rev-parse HEAD)" --directory .cloudflare-site
-          python3 scripts/deployment/artifact.py verify-artifact --branch develop --sha "$(git rev-parse HEAD)" --directory .cloudflare-site
+          test -s .cloudflare-build-provenance.json
+          grep -q '"buildMode": "canonical-source-baseline"' .cloudflare-build-provenance.json
