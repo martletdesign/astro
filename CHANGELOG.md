@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.3
+
+- Restore the canonical single `nav.page-index` contents region instead of a nested navigation wrapper that draws a second border.
+- Use the native `p.eyebrow` heading and `li.page-index__section` items while retaining the existing section links and destinations.
+
 ## 2.0.2
 
 - Replace the generic starter shell with native Astro compositions following the accepted Martlet Jekyll visual baseline.
