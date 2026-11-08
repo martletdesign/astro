@@ -13,7 +13,7 @@ npm run preview
 
 Use the Astro package repository as the Cloudflare project source. Root directory: `reference`; build command: `npm run build`; static output: `dist`. `develop` is the development branch and `main` is the release branch. Branch selection provides deployment approval; no separate attestation, archive reconstruction, package assembly, or deployment script is required.
 
-For Cloudflare Workers static assets, the included `wrangler.json` uses `dist`. The standard deploy command is `npx wrangler deploy`; for a Workers preview use `npx wrangler versions upload`. Cloudflare Pages uses `dist` directly without a deploy command.
+For Cloudflare Workers static assets, the included `wrangler.json` uses `dist`. The standard deploy command is `npx wrangler deploy`; for a Workers preview use `npx wrangler preview`. The configuration includes the required empty `previews` block; static assets and compatibility settings stay at the top level. Cloudflare Pages uses `dist` directly without a deploy command.
 
 ## Package boundary
 
