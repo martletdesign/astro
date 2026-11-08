@@ -1,0 +1,5 @@
+---
+import Shell from '../components/Martlet.astro';import {localPath as href} from '../paths';import {sectionImages} from '../reference.mjs';
+const page={id:'image-credits',title:'Image credits.',eyebrow:'Source and attribution',summary:'Approved responsive illustrations and section photographs used throughout this reference.'};
+---
+<Shell page={page} href={href} base={import.meta.env.BASE_URL} renderContent={false}><h2>Signature illustration</h2><p>The approved Martlet panoramic bird illustration is retained from the canonical Jekyll reference.</p><h2>Section photographs</h2>{Object.entries(sectionImages).map(([name,credit])=><section><h3>{name}</h3><p>{credit.author} · <a href={credit.source}>Original source</a> · <a href={credit.licenseURL}>{credit.license}</a>. Cropped and resized into approved responsive derivatives.</p></section>)}</Shell>
