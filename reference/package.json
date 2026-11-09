@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@martlet/astro": "2.1.0",
-    "@martlet/core": "2.3.0",
+    "@martlet/core": "github:martletdesign/core#ba26eb5fedd1d7cb43e6f3cb6ae7ab25c5ff1cc1",
     "astro": "7.3.2",
     "markdown-it": "14.3.3",
     "markdown-it-footnote": "4.0.0",
