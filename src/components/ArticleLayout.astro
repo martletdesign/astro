@@ -3,10 +3,10 @@ import Layout from './Layout.astro';
 import Container from './Container.astro';
 import PageHeader from './PageHeader.astro';
 import Sidebar from './Sidebar.astro';
-interface Props { title: string; documentTitle?: string; description?: string; summary?: string; eyebrow?: string; mode?: 'light' | 'dark'; lang?: string; mainId?: string; class?: string; bodyClass?: string; sidebarLabel?: string; }
-const { title, documentTitle = title, description, summary, eyebrow, mode = 'light', lang = 'en', mainId = 'main-content', class: className, bodyClass, sidebarLabel = 'Supporting information' } = Astro.props;
+interface Props { stylesheet?: string; title: string; documentTitle?: string; description?: string; summary?: string; eyebrow?: string; mode?: 'light' | 'dark'; lang?: string; mainId?: string; class?: string; bodyClass?: string; sidebarLabel?: string; }
+const { stylesheet, title, documentTitle = title, description, summary, eyebrow, mode = 'light', lang = 'en', mainId = 'main-content', class: className, bodyClass, sidebarLabel = 'Supporting information' } = Astro.props;
 ---
-<Layout title={documentTitle} description={description} mode={mode} lang={lang} mainId={mainId} mainTabindex={-1} class={className} bodyClass={bodyClass}>
+<Layout stylesheet={stylesheet} title={documentTitle} description={description} mode={mode} lang={lang} mainId={mainId} mainTabindex={-1} class={className} bodyClass={bodyClass}>
   <slot name="head" slot="head" />
   <slot name="header" slot="header" />
   <slot name="footer" slot="footer" />

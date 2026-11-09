@@ -1,7 +1,9 @@
 ---
-import '../styles.css';
+import defaultStylesheet from '../styles.css?url';
+
 interface Props {
   title: string;
+  stylesheet?: string;
   description?: string;
   lang?: string;
   mode?: 'light' | 'dark';
@@ -11,7 +13,7 @@ interface Props {
   bodyClass?: string;
   skipLabel?: string;
 }
-const { title, description, lang = 'en', mode = 'light', mainId = 'main-content', mainTabindex, class: htmlClass, bodyClass, skipLabel = 'Skip to content' } = Astro.props;
+const { stylesheet = defaultStylesheet, title, description, lang = 'en', mode = 'light', mainId = 'main-content', mainTabindex, class: htmlClass, bodyClass, skipLabel = 'Skip to content' } = Astro.props;
 ---
 <!doctype html>
 <html lang={lang} class={htmlClass} data-martlet={mode}>
@@ -20,6 +22,7 @@ const { title, description, lang = 'en', mode = 'light', mainId = 'main-content'
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>{title}</title>
     {description && <meta name="description" content={description} />}
+    <link rel="stylesheet" href={stylesheet} />
     <slot name="head" />
   </head>
   <body class:list={['martlet', bodyClass]}>
