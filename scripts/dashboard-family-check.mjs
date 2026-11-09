@@ -7,7 +7,7 @@ export async function checkDashboardFamily(directory,family) {
   for(const kind of ['administration','operations','analytics']) {
     const html=await readFile(join(directory,`examples/dashboard-${kind}/index.html`),'utf8');
     assert.doesNotMatch(html,/<style\b|\sstyle\s*=|--undefined-|data-family="undefined"/i);
-    assert.match(html,/assets\/css\/reference\.css/);
+    assert.match(html,/assets\/css\/martlet\.css/);
     if(kind==='analytics') assert.match(html,/role="region" aria-label="Analytics source records table"/);
     assert.match(html,new RegExp(`data-family="${kind==='analytics'?family[0]:family}"`));
   }
