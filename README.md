@@ -60,7 +60,7 @@ npm publication uses the existing stage-only trusted publisher and an explicit n
 
 ## Experimental UI language
 
-The 1.2.x line historically used `@martlet/theme`. Astro 2.0.3 requires `@martlet/core@^2.2.4`; existing component APIs and slots remain available. [New contents/footer contracts and migration](docs/consolidation.md) are additive; existing slots, default footer, and supporting sidebar behavior remain available. The reference article exercises the additions.
+The 1.2.x line historically used `@martlet/theme`. Astro 2.1.0 requires `@martlet/core@^2.3.0`; existing component APIs and slots remain available. [New contents/footer contracts and migration](docs/consolidation.md) are additive; existing slots, default footer, and supporting sidebar behavior remain available. The reference article exercises the additions.
 
 ## Forms
 
@@ -69,3 +69,11 @@ The reference `/form/` demonstrates native HTML with supported core form classes
 ## Reference delivery
 
 The reference includes all 50 canonical examples, three dashboards, and a separate scientific workspace. These are explicitly simulated host applications, not exported Astro controllers. See [standard Astro hosting](docs/deployment.md).
+
+### Shared stylesheet ownership
+
+All reference CSS is exported by `@martlet/core@2.3.0`. Astro and Jekyll use identical `reference.css` and `fonts.css` files. Edit Core, publish it, update the exact dependency and lockfile, then run `npm run styles:sync` in `reference/`. `npm run styles:check` rejects edited or extra CSS assets. The generated asset manifest records the package version and SHA-256 of each file.
+
+Page templates and client code must not contain style elements, style attributes, CSS mutation calls, or local stylesheet definitions. Source and rendered-page checks enforce this. Use the Core markup classes and named data attributes instead.
+
+`Layout`, `ArticleLayout`, `DocumentationLayout`, and `LandingLayout` accept an optional `stylesheet` URL. Reference pages pass the canonical Core asset; ordinary consumers retain the bundled Core defaults when this property is omitted.

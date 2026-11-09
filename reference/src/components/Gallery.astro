@@ -12,12 +12,6 @@ const {section, Button} = Astro.props;
     <figure><img alt="" width="960" height="640" /><figcaption></figcaption></figure>
   </dialog>
 </div>
-<style>
-.gallery-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,17rem),1fr)); gap:1.5rem; }
-.gallery figure { margin:0; }
-.gallery img { display:block; width:100%; height:auto; }
-.gallery dialog { max-width:min(90vw, 64rem); max-height:90vh; overflow:auto; }
-</style>
 <script>
   document.querySelectorAll('[data-gallery]').forEach(gallery => {
     const dialog = gallery.querySelector('dialog');

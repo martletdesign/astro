@@ -7,11 +7,6 @@ const {Button} = Astro.props;
 <p data-chat-fallback>Message composition is unavailable.</p>
 <noscript><p>Message composition requires JavaScript.</p></noscript>
 </div>
-<style>
-fieldset { display:grid; gap:.5rem; min-width:0; }
-label textarea { display:block; margin-top:.5rem; font-weight:400; }
-.chat-actions { display:flex; flex-wrap:wrap; gap:.75rem; }
-</style>
 <script>
   document.querySelectorAll('[data-conversation]').forEach(conversation => {
     const chat = conversation.querySelector('[data-chat]');

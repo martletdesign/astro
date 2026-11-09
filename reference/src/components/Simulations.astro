@@ -16,11 +16,6 @@ if(typeof id!=='string'||!/^[a-z][a-z0-9-]*$/.test(id)) throw new Error('Simulat
   </div>
   <noscript><p>Changing the illustrated viewpoint requires JavaScript.</p></noscript>
 </>}
-<style>
-.controls { display:grid; gap:.5rem; }
-figure { margin-inline:0; }
-figure img { max-width:100%; height:auto; }
-</style>
 <script>
   document.querySelectorAll('[data-sensors]').forEach(sensors => {
     const mode=sensors.querySelector('select'); const ventilation=sensors.querySelector('input');
