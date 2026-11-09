@@ -1,10 +1,16 @@
 # Unreleased
 
+
 - Separate the full reference application into `reference/` with pinned published npm dependencies and a standard Astro build.
 - Stop shipping the embedded starter; new sites use the independent `astro-starter` repository.
 - Retire custom Cloudflare website build/deployment scripts and archive workflow entry points.
 
 # Changelog
+
+## 2.1.0 — 2026-11-09
+
+- Add an optional external stylesheet URL to the base, article, documentation, and landing layouts so references can share Core CSS.
+- Require Core 2.3.0, which exports the canonical Astro/Jekyll reference stylesheets.
 
 ## 2.0.3
 
