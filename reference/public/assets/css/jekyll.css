@@ -476,3 +476,6 @@ body.martlet.dashboard-page main .eyebrow { color:var(--martlet-muted); }
   .page-intro .eyebrow { overflow-wrap:anywhere; word-break:normal; }
   .site-header .brand span { font-size:min(1em, 10vw); }
 }
+
+/* Journal entries read as a collection of destinations. */
+body.martlet .journal-list a, body.martlet .journal-list a:hover { text-decoration:none; }
