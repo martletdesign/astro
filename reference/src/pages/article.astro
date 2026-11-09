@@ -7,7 +7,7 @@ import DemoHead from '../components/DemoHead.astro';
 import ReferenceHeader from '../components/SourceHeader.astro';
 import DemoFooter from '../components/DemoFooter.astro';
 ---
-<ArticleLayout stylesheet={localPath("/assets/css/reference.css")} title="A clear account of the work" summary="A short introduction gives the reader enough context to begin." eyebrow="An example article" sidebarLabel="Related reading" bodyClass="martlet-source-profile reference-specimen hero-context--compact">
+<ArticleLayout stylesheet={localPath("/assets/css/martlet.css")} title="A clear account of the work" summary="A short introduction gives the reader enough context to begin." eyebrow="An example article" sidebarLabel="Related reading" bodyClass="martlet-source-profile reference-specimen hero-context--compact">
   <Fragment slot="head"><DemoHead/><meta name="example-head" content="forwarded"/></Fragment>
   <ReferenceHeader slot="header" home={localPath('/')} href={localPath}/>
 
