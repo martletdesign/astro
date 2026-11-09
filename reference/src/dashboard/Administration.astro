@@ -5,23 +5,16 @@ import {dashboardPayload,serializeForScript} from './fixture.mjs';
 import DashboardNav from './DashboardNav.astro';
 import {peerDashboardURL} from './peer.mjs';
 import Button from '@nightjar/button';
-import '../../page-archetypes/jekyll/assets/css/dashboard.css';
-import './administration.css';
-import './dashboard-integration.css';
-import martletCSS from './administration-martlet.css?raw';
-import krigsvoldCSS from './administration-krigsvold.css?raw';
+
 const snapshotLabel=dashboardSnapshotLabel(fixture.as_of);
 const family='martlet'; // Native reference identity; no external build environment is required.
 const {href,page}=Astro.props;
 const peer=peerDashboardURL(process.env.NIGHTJAR_PEER_URL,'administration');
 const peerFamily=family==='martlet'?'Krigsvold':'Martlet';
-const tokens={'ex-text':'text','ex-strong':'text','ex-muted':'muted','ex-bg':'bg','ex-panel':'panel','ex-line':'line','ex-link':'link','ex-focus':'link','dash-ui-font':'font-sans','dash-number-font':family==='krigsvold'?'font-mono':'font-sans','dash-chart-primary':'chart-1','dash-chart-secondary':'chart-2','dash-warning':'warning','dash-danger':'danger','dash-success':'green','dash-overlay':'overlay-scrim'};
-const variables=Object.entries(tokens).map(([name,token])=>`--${name}:var(--${family}-${token})`).join(';');
 const json=serializeForScript(dashboardPayload('administration',fixture));
 const people=[...fixture.people].sort((a,b)=>a.name.localeCompare(b.name,'en'));
 ---
-<style is:inline set:html={family==='martlet'?martletCSS:krigsvoldCSS}></style>
-<div class="dash-app" data-dashboard="administration" data-family={family} style={variables}>
+<div class="example-root dash-app" data-dashboard="administration" data-family={family}>
   <div class="dash-layout">
     <DashboardNav href={href} current="administration" />
     <div class="dash-main">

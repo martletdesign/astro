@@ -15,13 +15,6 @@ const filterId = `workspace:${section.id}:filter`;
   </section>
 </div>
 <noscript><p>The full record list is shown above. Selection and local review require JavaScript.</p></noscript>
-<style>
-.workspace { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,20rem),1fr)); gap:2rem; }
-.workspace-records { padding:0; list-style:none; }
-.workspace-records li { margin-block:1.5rem; }
-.workspace-records [data-record-status] { margin-inline-start:.75rem; }
-.workspace-actions { display:flex; flex-wrap:wrap; gap:.75rem; }
-</style>
 <script>
   document.querySelectorAll('[data-workspace]').forEach(workspace => {
     const records = [...workspace.querySelectorAll('[data-record]')];

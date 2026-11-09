@@ -30,8 +30,8 @@ try{
   for(const mode of ['light','dark']){
    await page.evaluate(({family,mode})=>{document.documentElement.setAttribute(`data-${family}`,mode);document.documentElement.dataset.appearance=mode;},{family:'martlet',mode});
    const tokens=await page.locator('[data-dashboard], [data-analytics-dashboard]').first().evaluate((element,family)=>{
-    const style=getComputedStyle(element),analytics=element.hasAttribute('data-analytics-dashboard');
-    return {text:style.getPropertyValue(analytics?'--a-text':'--ex-text').trim(),nativeText:style.getPropertyValue(`--${family}-text`).trim(),chart:style.getPropertyValue('--dash-chart-primary').trim(),nativeChart:style.getPropertyValue(`--${family}-chart-1`).trim()};
+    const style=getComputedStyle(element);
+    return {text:style.getPropertyValue('--ex-text').trim(),nativeText:style.getPropertyValue(`--${family}-text`).trim(),chart:style.getPropertyValue('--dash-chart-primary').trim(),nativeChart:style.getPropertyValue(`--${family}-chart-1`).trim()};
    },'martlet');
    assert.ok(tokens.text && tokens.chart,`${route} ${mode} native semantic tokens must resolve`);
    assert.equal(tokens.text,tokens.nativeText);assert.equal(tokens.chart,tokens.nativeChart);

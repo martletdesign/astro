@@ -7,7 +7,7 @@ import ReferenceHeader from '../components/SourceHeader.astro';
 import ReferenceFooter from '../components/SourceFooter.astro';
 import ReferenceMasthead from '../components/SourceMasthead.astro';
 ---
-<Layout title="Layout lab" bodyClass="martlet-source-profile reference-specimen hero-context--compact">
+<Layout stylesheet={localPath("/assets/css/reference.css")} title="Layout lab" bodyClass="martlet-source-profile reference-specimen hero-context--compact">
   <DemoHead slot="head"/>
   <ReferenceHeader slot="header" home={localPath('/')} href={localPath}/>
 
@@ -16,7 +16,7 @@ import ReferenceMasthead from '../components/SourceMasthead.astro';
     <SectionHeading title={`${mode === 'light' ? 'Light' : 'Dark'} compositions`} id={`lab-${mode}`} />
     <section><h2>Stack and cluster</h2><Stack space="small"><Stack class="probe-regular-space"><p>Nested regular first.</p><p>Nested regular second.</p></Stack><p>First item.</p><p>Second item.</p><Cluster as="ul" space="small"><li><a href={localPath('/')}>Home</a></li><li><a href={localPath('/article/')}>A longer article label</a></li><li><a href={localPath('/documentation/')}>Documentation</a></li></Cluster></Stack></section>
     <section><h2>A grid with three columns at most</h2><Grid columns={3} class="probe-grid">{[1,2,3,4,5].map(n=><Card><h3>Item {n}</h3><p>A column gives way when its minimum no longer fits.</p></Card>)}</Grid></section>
-    <section><h2>A nested grid</h2><div style="max-inline-size:24rem"><Grid columns={2} class="probe-nested"><Card><p>Nested first</p></Card><Card><p>Nested second</p></Card></Grid></div></section>
+    <section><h2>A nested grid</h2><div class="reference-nested-grid"><Grid columns={2} class="probe-nested"><Card><p>Nested first</p></Card><Card><p>Nested second</p></Card></Grid></div></section>
     <section><h2>A supporting sidebar</h2><Sidebar class="probe-sidebar" sidebarLabel="Example supporting information"><p>Main content retains a useful minimum width.</p><div slot="sidebar"><h3>Supporting information</h3><p>The aside follows the main content.</p></div></Sidebar></section>
     <section><h2>A leading sidebar</h2><Sidebar side="start" class="probe-leading" sidebarLabel="Example navigation"><nav slot="sidebar" aria-label="Example sections"><a href="#stress">Go to stress content</a></nav><p>The navigation precedes the main content in both source and visual order.</p></Sidebar></section>
     <section><h2>A split feature</h2><Split class="probe-split"><div><h3>The primary region</h3><p>The default ratio belongs to this design family.</p></div><Card slot="secondary"><h3>The secondary region</h3><p>At narrow widths it follows the primary region.</p></Card></Split></section>

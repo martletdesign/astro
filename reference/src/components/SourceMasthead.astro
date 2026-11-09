@@ -7,7 +7,7 @@ const path=width=>`/assets/images/${signature?'heroes':'sections'}/martlet-${ima
 const credit=image&&!signature?sectionImages[image]:null;
 const date=page.date&&formatCatalogDate(page.date,'long');
 ---
-<header class:list={['page-intro',`page-intro--${hero.variant}`,{'page-intro--illustrated':!!image}]} data-hero-variant={hero.variant} style={hero.variant==='section'?'--martlet-hero-focal:center':undefined}>
+<header class:list={['page-intro',`page-intro--${hero.variant}`,{'page-intro--illustrated':!!image}]} data-hero-variant={hero.variant} data-hero-focal="center">
 {image&&<img class="page-intro__art" src={href(path(signature?2172:1920))} srcset={widths.map(width=>`${href(path(width))} ${width}w`).join(', ')} sizes="100vw" width={signature?2172:1920} height={signature?724:640} alt="" aria-hidden="true" fetchpriority="high" decoding="async"/>}
 <div class="page-intro__shade"><div class="container page-intro__content">{(page.eyebrow||page.category)&&<p class="eyebrow">{page.eyebrow||`${page.category} · Fictional demonstration`}</p>}<h1 id="page-title">{page.title}</h1>{page.summary&&<p>{page.summary}</p>}<div class="masthead-metadata">{date&&<time datetime={page.date}>{date}</time>}{page.author&&<> · {page.author}</>}</div></div></div></header>
 {credit&&<aside class="hero-credit" aria-label="Section image credit"><div class="container">Photo: {credit.author} · <a href={credit.source}>Source</a> · <a href={credit.licenseURL}>{credit.license}</a>. Cropped and resized. <a href={href('/image-credits/')}>All image credits and source files</a></div></aside>}
