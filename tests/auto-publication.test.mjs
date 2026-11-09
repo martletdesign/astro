@@ -13,13 +13,13 @@ async function fixture(work) {
  const git=args=>execFileSync('git',args,{cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
  try {
   git(['init','-b','main']);git(['config','user.name','Publication fixture']);git(['config','user.email','publication@example.test']);
-  const peerDependencies={'@martlet/core':'^2.2.4'},pkg={name,version:'2.0.3',private:true,repository:{url:'git+https://github.com/'+repository+'.git'},peerDependencies,files:['src','starter','README.md','LICENSE']};
-  for(const dir of ['src','starter'])await mkdir(join(root,dir));
+  const peerDependencies={'@martlet/core':'^2.2.4'},pkg={name,version:'2.0.3',private:true,repository:{url:'git+https://github.com/'+repository+'.git'},peerDependencies,files:['src','docs','README.md','LICENSE']};
+  for(const dir of ['src','docs'])await mkdir(join(root,dir));
   await writeFile(join(root,'package.json'),JSON.stringify(pkg,null,2)+'\n');
   await writeFile(join(root,'package-lock.json'),JSON.stringify({name,version:pkg.version,lockfileVersion:3,packages:{'':{name,version:pkg.version,peerDependencies}}}));
   await writeFile(join(root,'CHANGELOG.md'),'# Changelog\n\n## 2.0.3\n\nFixture.\n');
   await writeFile(join(root,'README.md'),'Publication fixture.\n');await writeFile(join(root,'LICENSE'),'MIT\n');
-  await writeFile(join(root,'src/index.ts'),'export const fixture = true;\n');await writeFile(join(root,'starter/index.html'),'<h1>Fixture</h1>\n');
+  await writeFile(join(root,'src/index.ts'),'export const fixture = true;\n');await writeFile(join(root,'docs/index.html'),'<h1>Fixture</h1>\n');
   git(['add','.']);git(['commit','-m','Accepted source']);const sha=git(['rev-parse','HEAD']);git(['update-ref','refs/remotes/origin/main',sha]);
   process.chdir(root);await work({directory,root,git,sha,pkg});
  } finally {process.chdir(previous);await rm(directory,{recursive:true,force:true});}
@@ -52,7 +52,7 @@ test('the real normalized archive preserves public bytes across workflow-only co
  const manifest=JSON.parse(execFileSync('tar',['-xOzf',one.archive,'package/package.json'],{encoding:'utf8'}));assert.equal(manifest.private,false);assert.equal(manifest.name,name);
  await mkdir(join(root,'.github'));await writeFile(join(root,'.github/workflow-only.txt'),'Workflow changed');git(['add','.']);git(['commit','-m','Workflow-only source']);
  const two=await normalizedArchive(root,join(directory,'two'));assert.equal(one.sha256,two.sha256);
- await writeFile(join(root,'starter/index.html'),'<h1>Changed shipped starter</h1>');git(['add','.']);git(['commit','-m','Changed starter']);
+ await writeFile(join(root,'docs/index.html'),'<h1>Changed shipped documentation</h1>');git(['add','.']);git(['commit','-m','Changed documentation']);
  const three=await normalizedArchive(root,join(directory,'three'));assert.notEqual(two.sha256,three.sha256);
 }));
 

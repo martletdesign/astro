@@ -1,0 +1,58 @@
+---
+import { renderMarkdown } from '../markdown.mjs';
+import Search from './Search.astro';
+import DemoForm from './DemoForm.astro';
+import Catalog from './Catalog.astro';
+import CanonicalRegister from './CanonicalRegister.astro';
+import Gallery from './Gallery.astro';
+import Workspace from './Workspace.astro';
+import Chat from './Chat.astro';
+import Simulations from './Simulations.astro';
+import ListingEnhancement from './ListingEnhancement.astro';
+import { exampleImage } from '../assets.mjs';
+import { formatCatalogDate } from '../../page-archetypes/lib/catalog-date.mjs';
+import { isValidEventDateTime, isEventEndBeforeStart } from '../../page-archetypes/lib/event-time.mjs';
+const {page, href, base, Button} = Astro.props;
+
+---
+<div class="recipe">
+  {page.semantic_class === 'article' && <>
+    <nav class="example-context" aria-label="Article context"><a href={href('/examples/person/')}>About {page.author}</a> · <a href={href('/examples/archive/')}>All writing</a></nav>
+    <ul class="example-context recipe-tags" role="list" aria-label="Article subjects">{page.tags.map(tag => <li><a href={href('/examples/categories/')}>{tag}</a></li>)}</ul>
+  </>}
+  {page.semantic_class === 'event' && <aside aria-label="Event details"><p><strong>Event details</strong></p><p>{isValidEventDateTime(page.event.start)?<time datetime={page.event.start}>{page.event.display_start}</time>:<span>{page.event.display_start} (invalid start time)</span>} to {isValidEventDateTime(page.event.end)?<time datetime={page.event.end}>{page.event.display_end}</time>:<span>{page.event.display_end} (invalid end time)</span>} · {page.event.timezone}</p>{isEventEndBeforeStart(page.event.start,page.event.end) && <p>Event end is earlier than its start. Check the event times.</p>}<p>{page.event.location} · {page.event.registration}</p></aside>}
+  {page.semantic_class === 'catalog-index' && <Catalog href={href} />}
+  {['changelog','dashboard-components'].includes(page.id)?<CanonicalRegister page={page} base={base}/>:page.sections.map(section => <section class={`example-section example-section--${section.kind||'prose'}`} aria-labelledby={section.id}>
+    <div class="example-section__label"><h2 id={section.id}>{section.title}</h2></div><div class="example-section__body">
+    {section.body && <div class="example-prose" set:html={renderMarkdown(section.body, base, {fixtureMarkup: page.id === 'stress-test', docId:`${page.id}-${section.id}`})} />}
+    {section.kind==='cards'&&(page.id==='documentation'?<ol class="example-documentation-entries" aria-label="Guides and reference">{section.items.map(item=><li><article><h3><a href={href(item.url)}>{item.title}</a></h3><p>{item.summary}</p></article></li>)}</ol>:<div class="example-cards">{section.items.map(item=><article class="example-card"><h3><a href={href(item.url)}>{item.title}</a></h3><p>{item.summary}</p></article>)}</div>)}
+    {section.kind === 'listing' && <div data-listing>
+      <ul class="example-list">{section.items.map(item => <li data-list-item>
+      <div class="example-list__meta">{item.date && (formatCatalogDate(item.date) ? <time datetime={item.date}>{formatCatalogDate(item.date)}</time> : <span>Invalid date: {item.date}</span>)}{item.tag&&<span class="example-tag">{item.tag}</span>}</div>
+      <div><h3><a href={href(item.url)}>{item.title}</a></h3><p>{item.summary}</p></div>
+      </li>)}</ul>
+      {section.items.length > 3 && <><nav class="example-pagination" data-pagination aria-label={`${section.title} pages`} hidden>
+        <Button data-previous>Previous</Button> <span data-page-status role="status"></span> <Button data-next>Next</Button>
+      </nav><ListingEnhancement /></>}
+    </div>}
+    {section.kind === 'table' && <div class="example-table-scroll" role="region" aria-label={`${section.title} table`} tabindex="0"><table><caption>{section.title}</caption><thead><tr>{section.headers.map(header => <th scope="col">{header}</th>)}</tr></thead><tbody>{section.rows.map(row => <tr>{row.map((cell,index) => index === 0 ? <th scope="row">{cell}</th> : <td>{cell}</td>)}</tr>)}</tbody></table></div>}
+    {section.kind === 'figure' && <figure><img src={exampleImage(section.image)} alt={section.alt} width="960" height="640" loading="lazy" /><figcaption>{section.caption}</figcaption></figure>}
+    {section.kind === 'gallery' && <Gallery section={section} Button={Button} />}
+    {['sensors','scene'].includes(section.kind) && <Simulations kind={section.kind} id={section.id} />}
+    {section.kind === 'faq' && (page.id==='faq'?<div class="example-faq example-faq--grouped">{[["About these examples","faq-about",section.items.slice(0,2)],["Using these examples","faq-using",section.items.slice(2)]].map(([label,id,items])=><section class="example-faq__group" aria-labelledby={id}><h3 id={id}>{label}</h3><div class="example-faq__questions">{items.map(item=><details><summary>{item.question}</summary><div class="example-faq__answer"><p>{item.answer}</p></div></details>)}</div></section>)}</div>:<div class="example-faq">{section.items.map(item=><details><summary>{item.question}</summary><p>{item.answer}</p></details>)}</div>)}
+    {section.kind === 'stats' && <dl class="example-stats">{section.items.map(item => <div><dt>{item.label}</dt><dd>{item.value}</dd></div>)}</dl>}
+    {section.kind === 'plans' && <div class="example-cards">{section.items.map(item => <article><h3>{item.title}</h3><p>{item.price}</p><p>{item.summary}</p><ul>{item.features.map(feature=><li>{feature}</li>)}</ul><Button href={href(item.action.url)} download={item.action.download}>{item.action.label}</Button></article>)}</div>}
+    {section.kind === 'workspace' && <Workspace section={section} Button={Button} />}
+    {section.kind === 'chat' && <Chat Button={Button} />}
+    {section.kind === 'form' && <DemoForm kind={section.form} id={section.id} Button={Button} />}
+    {section.kind === 'search' && <Search base={base} id={section.id} title={section.title} Button={Button} />}
+    {section.kind === 'facts' && <dl class="example-facts">{section.facts.map(fact => <div><dt>{fact.label}</dt><dd>{fact.value}</dd></div>)}</dl>}
+    {section.actions && <ul class="example-actions">{section.actions.map(action => <li><Button href={href(action.url)} download={action.download}>{action.label}</Button></li>)}</ul>}
+  </div></section>)}
+</div>
+<style>
+.recipe{min-width:0;overflow-wrap:anywhere}.example-cards{list-style:none;padding:0}.example-actions{list-style:none;padding:0}
+.recipe figure{margin-inline:0}.recipe figure img{max-width:100%;height:auto}
+.recipe-tags{display:flex;flex-wrap:wrap;gap:1rem;list-style:none;padding-inline-start:0}
+@media print{[data-list-item][hidden]{display:list-item!important}[data-pagination]{display:none!important}}
+</style>

@@ -1,6 +1,6 @@
 # Martlet for Astro
 
-`@martlet/astro` 2.x integrates the independently published `@martlet/core` package. Version 2.0.3 restores the canonical contents navigation in the shipped starter and native reference site, retaining the accepted Martlet Jekyll visual baseline and existing component APIs.
+`@martlet/astro` 2.x integrates the independently published `@martlet/core` package. Version 2.0.3 restores the canonical contents navigation in the reference app, retaining the accepted Martlet Jekyll visual baseline and existing component APIs.
 
 `@martlet/astro` provides reusable Astro layouts and components. The framework-independent [`@martlet/core`](https://github.com/martletdesign/core) package owns the design definitions and font roles, extracted from jameshoward.us. Astro adds composition, never a competing palette.
 
@@ -33,22 +33,18 @@ Components also have direct exports such as `@martlet/astro/Container.astro`. Fo
 
 `Container` supports content, reading, and archive widths. `SectionHeading` supports h2/h3, alignment, eyebrow, description, class hooks, and a divider slot. `Card` is an article wrapper. `Button` accepts native anchor/button attributes and defaults buttons to `type="button"`.
 
-## Starter
+## Reference and starter
 
-Obtain the matching shipped starter without a repository checkout after verifying the version is available from npm:
+The complete [Astro reference application](reference/) lives in this repository alongside the components. It has its own npm manifest and lockfile and consumes published `@martlet/astro` and `@martlet/core` versions. It is excluded from the npm package.
 
 ```sh
-mkdir example && cd example
-npm pack @martlet/astro@2.0.3
-# Extract the downloaded martlet-astro-*.tgz into this directory.
-tar -xzf martlet-astro-2.0.3.tgz
-cp -R package/starter/. .
-rm -rf package
-npm install
+cd reference
+npm ci
 npm run dev
+npm run build
 ```
 
-Alternatively copy `node_modules/@martlet/astro/starter/` from an existing installation. It demonstrates the Martlet family’s canonical header, navigation, typography, hero tiers, approved imagery, and footer using native Astro components. Replace the example identity and content for your own site, and retain the supplied image attribution when reusing the artwork. The starter is initial project scaffolding; package updates supply the shared functionality afterward.
+To begin a new site, clone the separate [martletdesign/astro-starter](https://github.com/martletdesign/astro-starter) repository. The starter is no longer embedded in this package; existing projects do not need to be recreated. See [migration and hosting](docs/deployment.md).
 
 ## Compatibility and maintenance
 
@@ -64,12 +60,12 @@ npm publication uses the existing stage-only trusted publisher and an explicit n
 
 ## Experimental UI language
 
-The 1.2.x line historically used `@martlet/theme`. Astro 2.0.3 requires `@martlet/core@^2.2.4`; existing component APIs and slots remain available. [New contents/footer contracts and migration](docs/consolidation.md) are additive; existing slots, default footer, and supporting sidebar behavior remain available. The article starter exercises the additions.
+The 1.2.x line historically used `@martlet/theme`. Astro 2.0.3 requires `@martlet/core@^2.2.4`; existing component APIs and slots remain available. [New contents/footer contracts and migration](docs/consolidation.md) are additive; existing slots, default footer, and supporting sidebar behavior remain available. The reference article exercises the additions.
 
 ## Forms
 
-The starter `/form/` demonstrates native HTML with supported core form classes, explicit submit/reset types, validation, retained input, simulated failure/retry, and a changed-reset dialog. Nothing is sent or stored durably. Its local controls start disabled and are enabled only after initialization completes. If JavaScript is disabled, blocked, or fails during setup, an unavailable message remains visible and values cannot be submitted to the hosting server. Core owns the appearance; the small controller is host example code, not a new Astro API. See the core [form styling contract](https://github.com/martletdesign/core/blob/main/docs/form-styling.md). A `Button` accepts `type="submit"`, `type="reset"`, or its default `type="button"` without duplicate attributes; modifiers use `class="martlet-button--secondary"`.
+The reference `/form/` demonstrates native HTML with supported core form classes, explicit submit/reset types, validation, retained input, simulated failure/retry, and a changed-reset dialog. Nothing is sent or stored durably. Its local controls start disabled and are enabled only after initialization completes. If JavaScript is disabled, blocked, or fails during setup, an unavailable message remains visible and values cannot be submitted to the hosting server. Core owns the appearance; the small controller is host example code, not a new Astro API. See the core [form styling contract](https://github.com/martletdesign/core/blob/main/docs/form-styling.md). A `Button` accepts `type="submit"`, `type="reset"`, or its default `type="button"` without duplicate attributes; modifiers use `class="martlet-button--secondary"`.
 
 ## Reference delivery
 
-The starter includes all 50 canonical examples, three dashboards, and a separate scientific workspace. These are explicitly simulated host applications, not exported Astro controllers. See [native Cloudflare delivery](docs/deployment.md) for source identity, integrity, previews, and rollback.
+The reference includes all 50 canonical examples, three dashboards, and a separate scientific workspace. These are explicitly simulated host applications, not exported Astro controllers. See [standard Astro hosting](docs/deployment.md).

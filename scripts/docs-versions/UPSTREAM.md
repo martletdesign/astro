@@ -1,1 +1,0 @@
-The shared contract.mjs and snapshot.mjs are copied unchanged from k3jph/design-workbench commit d6acd29703db4233dd1352e1da90384a03ec3790 (draft PR #72). They run locally and require no workbench checkout. Changes to these files must be reconciled with the shared contract.

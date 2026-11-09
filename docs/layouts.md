@@ -43,4 +43,4 @@ The three page layouts share required `title`, optional `documentTitle`, `descri
 
 SiteHeader requires `name`; accepts `home`, `links` (href, label, optional current), `navigationLabel`, `class`; slots: brand, navigation, actions. SiteFooter accepts links, navigationLabel, class and default content. Brand slots contain text/artwork rather than another link. Header/footer links wrap rather than becoming a JavaScript-controlled mobile menu.
 
-Existing `Layout`, `Container`, `SectionHeading`, `Card`, and `Button` APIs remain available. The complete neutral starter demonstrates article, landing, documentation, and structural examples.
+Existing `Layout`, `Container`, `SectionHeading`, `Card`, and `Button` APIs remain available. The adjacent reference application demonstrates article, landing, documentation, and structural examples.

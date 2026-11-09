@@ -1,12 +1,11 @@
 {
   "name": "@martlet/astro",
-  "version": "2.0.3",
+  "version": "2.1.0",
   "description": "Reusable Astro layouts and components for the Martlet design system",
   "type": "module",
   "license": "MIT",
   "files": [
     "src",
-    "starter",
     "docs",
     "README.md",
     "LICENSE"
@@ -40,7 +39,7 @@
   ],
   "peerDependencies": {
     "astro": "^5.14.0 || ^6.0.0 || ^7.0.0",
-    "@martlet/core": "^2.2.4"
+    "@martlet/core": "^2.3.0"
   },
   "scripts": {
     "test": "node --test tests/*.test.mjs",

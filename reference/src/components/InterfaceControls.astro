@@ -1,0 +1,32 @@
+---
+import { Button } from '@martlet/astro';
+---
+<form class="reference-controls" aria-label="Interface controls" onsubmit="return false">
+  <div class="martlet-field reference-controls__field">
+    <label for="reference-query">Reference label</label>
+    <input id="reference-query" name="reference-query" type="text" placeholder="Enter a label" />
+  </div>
+  <Button type="button">Review</Button>
+</form>
+<style>
+  .reference-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    column-gap: var(--martlet-space-3);
+    inline-size: min(100%, 32rem);
+    margin-block: 1rem 1.5rem;
+  }
+  .reference-controls__field { display: grid; gap: var(--martlet-space-2); min-inline-size: 0; }
+  .reference-controls__field input {
+    inline-size: 100%;
+    block-size: var(--martlet-control-height);
+    min-block-size: var(--martlet-control-height);
+    padding-block: 0;
+  }
+  .reference-controls :global(.martlet-button) { align-self: end; margin: 0; }
+  @media (max-width: 22rem) {
+    .reference-controls { grid-template-columns: minmax(0, 1fr); row-gap: var(--martlet-space-3); }
+    .reference-controls :global(.martlet-button) { justify-self: start; }
+  }
+</style>
