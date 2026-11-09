@@ -464,9 +464,9 @@ html[data-appearance] body.martlet .site-header[data-navigation-ready].is-reflow
 }
 
 /* Dashboard content uses the active appearance's ink, including native labels. */
-body.martlet.dashboard-page :is(h1,h2,h3,h4,h5,h6) { color:var(--martlet-text-strong); }
-body.martlet.dashboard-page :is(label,legend) { color:var(--martlet-text); }
-body.martlet.dashboard-page .eyebrow { color:var(--martlet-muted); }
+body.martlet.dashboard-page main :is(h1,h2,h3,h4,h5,h6) { color:var(--martlet-text-strong); }
+body.martlet.dashboard-page main :is(label,legend) { color:var(--martlet-text); }
+body.martlet.dashboard-page main .eyebrow { color:var(--martlet-muted); }
 
 /* At 320 CSS px and extreme root-text resizing, the hero's single long
    eyebrow token must wrap rather than disappear behind the clipped image
