@@ -12,8 +12,8 @@
     "postbuild": "node scripts/audit-pages.mjs"
   },
   "dependencies": {
-    "@martlet/astro": "2.1.0",
-    "@martlet/core": "github:martletdesign/core#c6c981bbacacdaa5a74d1c4468c27ec28e7eb24c",
+    "@martlet/astro": "3.0.0",
+    "@martlet/core": "3.0.0",
     "astro": "7.3.2",
     "markdown-it": "14.3.3",
     "markdown-it-footnote": "4.0.0",
