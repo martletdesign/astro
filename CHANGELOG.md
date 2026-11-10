@@ -1,11 +1,12 @@
-# Unreleased
-
-
-- Separate the full reference application into `reference/` with pinned published npm dependencies and a standard Astro build.
-- Stop shipping the embedded starter; new sites use the independent `astro-starter` repository.
-- Retire custom Cloudflare website build/deployment scripts and archive workflow entry points.
-
 # Changelog
+
+## 3.0.0
+
+- **Breaking:** require `@martlet/core@^3.0.0`; Core 2 is no longer supported. Update canonical stylesheet imports from `reference.css` to `martlet.css`.
+- Retain exported Astro component names, props, and slots, with Astro 5–7 support.
+- Keep the reference application in `reference/` and the clonable starter in its independent repository; neither is bundled into the npm component package.
+- Deliver the reviewed dashboards, scientific workspace, article metadata, and keyboard-navigation fixes through the shared Core stylesheet and framework markup.
+- Use standard Astro reference builds and the existing trusted-publisher release workflow.
 
 ## 2.1.0 — 2026-11-09
 

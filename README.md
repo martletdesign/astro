@@ -1,13 +1,13 @@
 # Martlet for Astro
 
-`@martlet/astro` 2.x integrates the independently published `@martlet/core` package. Version 2.0.3 restores the canonical contents navigation in the reference app, retaining the accepted Martlet Jekyll visual baseline and existing component APIs.
+`@martlet/astro` 3.x requires `@martlet/core@^3.0.0`. Upgrade both packages together and replace canonical `reference.css` imports with `martlet.css`. Existing component names, props, and slots remain available. See [upgrading to Astro 3](docs/migration-3.md).
 
 `@martlet/astro` provides reusable Astro layouts and components. The framework-independent [`@martlet/core`](https://github.com/martletdesign/core) package owns the design definitions and font roles, extracted from jameshoward.us. Astro adds composition, never a competing palette.
 
 ## Install
 
 ```sh
-npm install @martlet/core @martlet/astro astro
+npm install @martlet/core@^3.0.0 @martlet/astro@^3.0.0 astro
 ```
 
 The GitHub organization is `martletdesign`; the npm scope is `martlet`.
@@ -56,11 +56,11 @@ Version 1.1 adds `Stack`, `Cluster`, `Grid`, `Sidebar`, `Split`, `Section`, `Pag
 
 ## Releases
 
-npm publication uses the existing stage-only trusted publisher and an explicit npm owner approval. Protected tags subsequently complete verified GitHub source releases. See [release setup](docs/releasing.md) for the one-time package authorization and release order.
+An accepted, unused version on `main` is published through the existing trusted publisher. Its manual workflow also supports staging. Protected tags complete verified GitHub source releases. See [release setup](docs/releasing.md) for the one-time package authorization and release order.
 
 ## Experimental UI language
 
-The 1.2.x line historically used `@martlet/theme`. Astro 2.1.0 requires `@martlet/core@^2.3.0`; existing component APIs and slots remain available. [New contents/footer contracts and migration](docs/consolidation.md) are additive; existing slots, default footer, and supporting sidebar behavior remain available. The reference article exercises the additions.
+The 1.2.x line historically used `@martlet/theme`. Astro 3.0.0 requires `@martlet/core@^3.0.0`; existing component APIs and slots remain available. [New contents/footer contracts and migration](docs/consolidation.md) are additive; existing slots, default footer, and supporting sidebar behavior remain available. The reference article exercises the additions.
 
 ## Forms
 

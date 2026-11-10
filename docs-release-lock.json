@@ -3,8 +3,8 @@
   "family": "martlet",
   "core": {
     "name": "@martlet/core",
-    "version": "2.3.0",
-    "integrity": "sha512-C4bNDgC8xaUxt0q4B1Y0jwtm53y6vJVlb6ukPobNSinnvUwUv1z3M57/qdMBLwdiTD+1+y0qi0rb3dv+RykL2A=="
+    "version": "3.0.0",
+    "integrity": "sha512-pEXoq6i3U3H+nwDi0OoTU4bJQWJ7BMTAJVxoIRP+KlqKXnvDNETBjTnD3WLHZadKr0PKS23t/MzQ/+++YJu56A=="
   },
   "astro": "7.3.2"
 }
