@@ -108,7 +108,7 @@ export async function releaseTagExists(api,tag,approvedSha) {
  return true;
 }
 
-export async function publishedArchive(fetcher,packed,{timeoutMs=90000,delayMs=5000,log=event=>console.error(JSON.stringify(event))}={}) {
+export async function publishedArchive(fetcher,packed,{timeoutMs=300000,delayMs=5000,log=event=>console.error(JSON.stringify(event))}={}) {
  assert.ok(Number.isFinite(timeoutMs)&&timeoutMs>0&&Number.isFinite(delayMs)&&delayMs>=0);
  const started=Date.now(),deadline=started+timeoutMs;let previous;
  for(let attempt=1;;attempt++){
