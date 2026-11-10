@@ -5,11 +5,15 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "preview": "astro preview"
+    "preview": "astro preview",
+    "styles:sync": "node scripts/sync-core-styles.mjs",
+    "styles:check": "node scripts/sync-core-styles.mjs --check",
+    "prebuild": "npm run styles:check",
+    "postbuild": "node scripts/audit-pages.mjs"
   },
   "dependencies": {
-    "@martlet/astro": "2.0.3",
-    "@martlet/core": "2.2.4",
+    "@martlet/astro": "2.1.0",
+    "@martlet/core": "github:martletdesign/core#c6c981bbacacdaa5a74d1c4468c27ec28e7eb24c",
     "astro": "7.3.2",
     "markdown-it": "14.3.3",
     "markdown-it-footnote": "4.0.0",

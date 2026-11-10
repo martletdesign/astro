@@ -2,8 +2,7 @@
 import catalog from '../../../page-archetypes/content/catalog.json';
 import Shell from '@nightjar/shell';
 import Analytics from '../../dashboard/Analytics.astro';
-import '../../dashboard/analytics.css';
-import '../../dashboard/dashboard-integration.css';
+
 const record=catalog.pages.find(page=>page.id==='dashboard-analytics');
 const page={...record,sections:[]};
 const base=import.meta.env.BASE_URL;

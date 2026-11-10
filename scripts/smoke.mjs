@@ -20,7 +20,12 @@ try {
   if(process.env.MARTLET_ASTRO_VERSION)pkg.dependencies.astro=process.env.MARTLET_ASTRO_VERSION;
   await writeFile(join(site,'package.json'),JSON.stringify(pkg,null,2)+'\n');
   execFileSync('npm',['install','--ignore-scripts','--no-audit','--no-fund'],{cwd:site,stdio:'inherit',timeout:180000});
-  if(!core){const lock=JSON.parse(await readFile(join(site,'package-lock.json'),'utf8')),installed=lock.packages?.[`node_modules/${pin.core.name}`];assert.equal(installed?.version,pin.core.version);assert.equal(installed?.integrity,pin.core.integrity);}
+  if(!core){
+    const lock=JSON.parse(await readFile(join(site,'package-lock.json'),'utf8')),installed=lock.packages?.[`node_modules/${pin.core.name}`];
+    assert.equal(installed?.version,pin.core.version);assert.equal(installed?.integrity,pin.core.integrity);
+  }
+  // The temporary consumer changes Core identity; copy that package's canonical CSS and manifest.
+  execFileSync('npm',['run','styles:sync'],{cwd:site,stdio:'inherit',timeout:30000});
   execFileSync('npm',['run','build'],{cwd:site,stdio:'inherit',timeout:180000,env:{...process.env,NIGHTJAR_BASE:'/'}});
   await checkDashboardFamily(join(site,'dist'),'martlet');
   const html=await readFile(join(site,'dist/index.html'),'utf8');

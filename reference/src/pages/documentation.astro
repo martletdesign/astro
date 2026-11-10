@@ -5,7 +5,7 @@ import DemoHead from '../components/DemoHead.astro';
 import ReferenceHeader from '../components/SourceHeader.astro';
 import ReferenceFooter from '../components/SourceFooter.astro';
 ---
-<DocumentationLayout title="A guide to your project" summary="Documentation with a reading column and a separate navigation region." sidebarLabel="Guide contents" bodyClass="martlet-source-profile reference-specimen hero-context--compact">
+<DocumentationLayout stylesheet={localPath("/assets/css/martlet.css")} title="A guide to your project" summary="Documentation with a reading column and a separate navigation region." sidebarLabel="Guide contents" bodyClass="martlet-source-profile reference-specimen hero-context--compact">
   <DemoHead slot="head"/>
   <ReferenceHeader slot="header" home={localPath('/')} href={localPath}/>
 
