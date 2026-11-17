@@ -37,9 +37,11 @@ jobs:
           MARTLET_ASTRO_VERSION: ${{ matrix.astro }}
           MARTLET_BROWSER: 1
           DESIGN_BROWSER: ${{ matrix.browser }}
+      # Archive layout diagnostics only on failed verification.
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: failure()
         with:
           name: layout-qa-${{ matrix.astro }}-${{ matrix.browser }}
           path: artifacts/qa/
           if-no-files-found: ignore
+          retention-days: 3
