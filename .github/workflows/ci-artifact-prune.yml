@@ -1,0 +1,56 @@
+name: Prune old CI artifacts
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/verify.yml'
+      - '.github/workflows/ci-artifact-prune.yml'
+  schedule:
+    - cron: '43 5 * * *'
+  workflow_dispatch:
+
+# Actions write applies only to this repository; release assets use other names.
+permissions:
+  actions: write
+
+concurrency:
+  group: ci-artifact-prune
+  cancel-in-progress: false
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TARGET_ARTIFACT_NAME: layout-qa-
+      MATCH_MODE: prefix
+    steps:
+      - name: Prune eligible CI archives older than three days
+        shell: bash
+        run: |
+          set -euo pipefail
+          cutoff_seconds="$(date -u -d '3 days ago' +%s)"
+          manifest="${RUNNER_TEMP}/ci-artifacts.tsv"
+          # List all artifacts before deleting to avoid skipped pages.
+          gh api --paginate --jq '.artifacts[]? | [.id, .name, .created_at] | @tsv' \
+            "repos/${GITHUB_REPOSITORY}/actions/artifacts?per_page=100" > "$manifest"
+          examined=0
+          removed=0
+          while IFS=$'\t' read -r id name created_at; do
+            if [[ "$MATCH_MODE" == exact ]]; then
+              [[ "$name" == "$TARGET_ARTIFACT_NAME" ]] || continue
+            else
+              [[ "$name" == "$TARGET_ARTIFACT_NAME"* ]] || continue
+            fi
+            examined=$((examined + 1))
+            created_seconds="$(date -u -d "$created_at" +%s)"
+            if (( created_seconds < cutoff_seconds )); then
+              gh api --method DELETE "repos/${GITHUB_REPOSITORY}/actions/artifacts/${id}" >/dev/null
+              removed=$((removed + 1))
+              sleep 0.5
+            fi
+          done < "$manifest"
+          echo "Examined $examined matching CI archives; removed $removed older than three days."
+          echo "Other artifacts, release assets, and recent CI evidence are untouched."
