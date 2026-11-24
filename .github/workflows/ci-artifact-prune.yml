@@ -1,13 +1,6 @@
 name: Prune old CI artifacts
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/verify.yml'
-      - '.github/workflows/ci-artifact-prune.yml'
-  schedule:
-    - cron: '43 5 * * *'
   workflow_dispatch:
 
 # Actions write applies only to this repository; release assets use other names.
